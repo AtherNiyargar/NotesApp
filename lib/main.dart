@@ -1,22 +1,48 @@
 import 'package:flutter/cupertino.dart';
-import 'package:notes_app/views/account_page.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:notes_app/views/account_and_settings_page.dart';
 import 'package:notes_app/views/create_note.dart';
 import 'package:notes_app/views/create_todo_page.dart';
 import 'package:notes_app/views/home_page.dart';
+import 'package:notes_app/views/login_page.dart';
+import 'package:notes_app/views/signup_page.dart';
+import 'package:notes_app/views/splash_screen.dart';
 import 'package:notes_app/views/todo_page.dart';
+import 'package:notes_app/views/welcome_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: CupertinoColors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+  
+  await dotenv.load();
+  await Supabase.initialize(
+    url: dotenv.get("URL"),
+    publishableKey: dotenv.get("PUBLISHABLE_KEY"),
+  );
   runApp(
-    // MainApp()
     CupertinoApp(
       initialRoute: "/",
       routes: {
-        "/": (_) => HomePage(),
+        "/": (_) => const SplashScreen(),
+        "/welcome_page": (_) => const WelcomePage(),
+        "/signup_page": (_) => SignupPage(),
+        "/login_page": (_) => LoginPage(),
+        "/home_page": (_) => HomePage(),
         "/create_note_page": (_) => CreateNotePage(),
-        "/todo_page" :(_) => TodoPage(),
-        "/create_todo_page":(_) => CreateTodoPage(),
-        "/account_page": (_) => AccountPage()
-
+        "/todo_page": (_) => TodoPage(),
+        "/create_todo_page": (_) => CreateTodoPage(),
+        "/account_and_settings_page": (_) => AccountAndSettingsPage(),
       },
       debugShowCheckedModeBanner: false,
     ),

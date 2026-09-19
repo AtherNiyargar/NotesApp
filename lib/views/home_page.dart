@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart' show Theme, Colors;
 import 'package:notes_app/elements/notes_preview.dart';
@@ -9,8 +8,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final themeMode = CupertinoTheme.brightnessOf(context);
-    // late String text;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     return CupertinoPageScaffold(
       child: Padding(
@@ -27,7 +24,7 @@ class HomePage extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
-                      "/account_page",
+                      "/account_and_settings_page",
                       // PageTransition(type: .leftToRight,
                       // curve: Curves.linearToEaseOut,
                       // duration: Duration(milliseconds: 400),

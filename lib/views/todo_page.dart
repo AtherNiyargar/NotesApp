@@ -1,10 +1,8 @@
 import 'package:cupertino_lists_enhanced/list_section.dart';
 import 'package:cupertino_lists_enhanced/list_tile.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-// https://www.reddit.com/r/whatsapp/s/qYjCiG2At3
 
 final List<String> completedTasks = [];
 
