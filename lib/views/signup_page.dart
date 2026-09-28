@@ -2,6 +2,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:notes_app/Exceptions/custom_exception.dart';
 import 'package:notes_app/backend/auh_service.dart';
+import 'package:notes_app/elements/captcha_verify_dialog.dart';
 import 'package:notes_app/elements/show_dialogs.dart';
 import 'package:notes_app/views/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
@@ -57,16 +58,14 @@ class _SignupPageState extends State<SignupPage> {
         return;
       }
 
-      await authService.signUp(email, password);
+      final captcha = await showCaptcha(context);
+      if (captcha == null) return;
+
+      await authService.signUp(email, password, captcha);
 
       if (!context.mounted) return;
       await showOtpDialog(context, email);
-    }
-    /*
-
-    AuthApiException (AuthApiException(message: Token has expired or is invalid, statusCode: 403, code: otp_expired))
-     */
-    on InvalidEmailException {
+    } on InvalidEmailException {
       if (!context.mounted) return;
       await showDialogs(
         context,
@@ -88,39 +87,6 @@ class _SignupPageState extends State<SignupPage> {
         logginIn = false;
       });
     }
-
-    /*
-    showCupertinoDialog(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: Text("Do you want to delete this\ntask?"),
-
-          content: Text("You cannot undo this action"),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-
-              // isDestructiveAction: true,
-              child: Text("Cancel"),
-              onPressed: () => Navigator.pop(context),
-            ),
-
-            CupertinoDialogAction(
-              // isDefaultAction: true,
-
-              isDestructiveAction: true,
-              child: Text("Delete"),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        );
-      },
-    );
-    setState(() {
-      logginIn = false;
-    });
-    */
   }
 
   @override
@@ -138,6 +104,8 @@ class _SignupPageState extends State<SignupPage> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
+  bool hidePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -178,17 +146,34 @@ class _SignupPageState extends State<SignupPage> {
                     obscureText: true,
                     keyboardType: .visiblePassword,
                   ),
-                  CupertinoTextField(
-                    controller: _confirmPasswordController,
-                    enabled: !logginIn,
-                    placeholder: "Confirm password",
-                    // decoration: BoxDecoration(
-                    //   color: CupertinoColors.secondarySystemBackground,
-                    //   borderRadius: BorderRadius.circular(7),
-                    // ),
-                    // padding: EdgeInsetsGeometry.all(15),
-                    obscureText: true,
-                    keyboardType: .visiblePassword,
+                  Column(
+                    crossAxisAlignment: .end,
+                    children: [
+                      CupertinoTextField(
+                        controller: _confirmPasswordController,
+                        enabled: !logginIn,
+                        placeholder: "Confirm password",
+                        // decoration: BoxDecoration(
+                        //   color: CupertinoColors.secondarySystemBackground,
+                        //   borderRadius: BorderRadius.circular(7),
+                        // ),
+                        // padding: EdgeInsetsGeometry.all(15),
+                        obscureText: hidePassword,
+                        keyboardType: .visiblePassword,
+                      ),
+                      CupertinoButton(
+                        onPressed: () {
+                          setState(() {
+                            hidePassword = !hidePassword;
+                          });
+                        },
+                        child: Icon(
+                          hidePassword
+                              ? CupertinoIcons.eye
+                              : CupertinoIcons.eye_slash,
+                        ),
+                      ),
+                    ],
                   ),
                   CupertinoButton.filled(
                     minimumSize: Size(double.infinity, 0),

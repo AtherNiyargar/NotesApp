@@ -9,9 +9,13 @@ class AuthService {
 
   SupabaseClient getClient() => _supabase ??= Supabase.instance.client;
 
-  Future signUp(String email, String password) async {
+  Future signUp(String email, String password, String captcha) async {
     final supabase = getClient();
-    await supabase.auth.signUp(email: email, password: password);
+    await supabase.auth.signUp(
+      email: email,
+      password: password,
+      captchaToken: captcha,
+    );
   }
 
   Future verifyOtp(BuildContext context, String otp, String email) async {
@@ -76,11 +80,16 @@ class AuthService {
   //   }
   // }
 
-  Future loginWithPassword(String email, String password) async {
+  Future loginWithPassword(
+    String email,
+    String password,
+    String captchaToken,
+  ) async {
     final supabase = getClient();
     return await supabase.auth.signInWithPassword(
       email: email,
       password: password,
+      captchaToken: captchaToken,
     );
   }
 }

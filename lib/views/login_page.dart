@@ -2,7 +2,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:notes_app/Exceptions/custom_exception.dart';
 import 'package:notes_app/backend/auh_service.dart';
-// import 'package:notes_app/backend/cupertino_sheet_workaround.dart';
+import 'package:notes_app/elements/captcha_verify_dialog.dart';
 import 'package:notes_app/elements/show_dialogs.dart';
 import 'package:notes_app/views/signup_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
@@ -43,19 +43,14 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      await authService.loginWithPassword(email, password);
+      final captcha = await showCaptcha(context);
+      if (captcha == null) return;
+
+      await authService.loginWithPassword(email, password, captcha);
 
       if (!context.mounted) return;
-      // CupertinoSheetRoute.popSheet(context);
+
       Navigator.of(context).pop();
-
-      // if (response != null) {
-      //   Navigator.of(context).pushNamedAndRemoveUntil("/", (_) => false);
-      // }
-
-      // await client.auth.signInWithOtp(email: email, shouldCreateUser: false);
-
-      // await showOtpDialog(context, email);
     } on InvalidEmailException {
       if (!context.mounted) return;
       await showDialogs(context, title: "Please enter a valid Gmail address");
@@ -72,11 +67,10 @@ class _LoginPageState extends State<LoginPage> {
         await showDialogs(
           context,
           title: "Unable to login",
-          content: "Please check your credentials.",
+          content: "Please check the email id or password.",
         );
       }
     } catch (e) {
-      print("========== ${e.toString()}");
       if (!context.mounted) return;
       await showDialogs(context, title: "Error occured: ${e.toString()}");
     } finally {
@@ -97,11 +91,10 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    // if (!context.mounted) return;
-
     super.dispose();
   }
 
+  bool hidePassword = true;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -124,27 +117,47 @@ class _LoginPageState extends State<LoginPage> {
                     placeholder: "Enter email",
                     keyboardType: .emailAddress,
                   ),
-                  CupertinoTextField(
-                    controller: _passwordController,
-                    enabled: !logginIn,
-                    placeholder: "Enter password",
-                    obscureText: true,
-                    keyboardType: .visiblePassword,
+
+                  Column(
+                    crossAxisAlignment: .end,
+                    children: [
+                      CupertinoTextField(
+                        controller: _passwordController,
+                        enabled: !logginIn,
+                        placeholder: "Enter password",
+                        obscureText: hidePassword,
+                        keyboardType: .visiblePassword,
+                        // suffix:
+                        // suffixMode: .editing,
+                        // suffix: Icon(CupertinoIcons.eye_fill),
+                      ),
+                      CupertinoButton(
+                        onPressed: () {
+                          setState(() {
+                            hidePassword = !hidePassword;
+                          });
+                        },
+                        child: Icon(
+                          hidePassword
+                              ? CupertinoIcons.eye
+                              : CupertinoIcons.eye_slash,
+                        ),
+                      ),
+                    ],
                   ),
                   CupertinoButton.filled(
                     minimumSize: Size(double.infinity, 0),
                     onPressed: logginIn
                         ? null
                         : () async {
+                            if (!context.mounted) return;
+
                             await tryLogin(
                               setState,
                               context,
                               _emailController.text.trim(),
                               _passwordController.text.trim(),
                             );
-                            // if (!context.mounted) return;
-                            // Navigator.pop(context);
-                            // await Future.delayed(Duration(seconds: 0));
                           },
                     child: logginIn
                         ? CupertinoActivityIndicator()
@@ -161,19 +174,12 @@ class _LoginPageState extends State<LoginPage> {
                             : () {
                                 Navigator.of(context).pop();
                                 showCupertinoSheet<void>(
-                                  // useNestedNavigation: nested,
                                   context: context,
                                   scrollableBuilder:
                                       (context, scrollController) {
                                         return SignupPage();
                                       },
                                 );
-
-                                // Navigator.of(context).push(
-                                //   CupertinoPageRoute(
-                                //     builder: (context) => SignupPage(),
-                                //   ),
-                                // );
                               },
                         child: Text(
                           "Create one",

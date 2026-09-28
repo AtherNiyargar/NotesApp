@@ -1,25 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:material_ui/material_ui.dart' show Colors;
-// import 'package:flutter/material.dart';
 import 'package:notes_app/backend/auh_service.dart';
+import 'package:notes_app/backend/database_functionality.dart';
 
 class AccountAndSettingsPage extends StatelessWidget {
-  const new({super.key});
+  new({super.key});
+
+  final DatabaseFunctionality databaseFunctionality = DatabaseFunctionality();
 
   @override
   Widget build(BuildContext context) {
     AuthService authService = .new();
-    // final theme = CupertinoTheme.brightnessOf(context);
     return CupertinoPageScaffold(
-      // backgroundColor: theme == .light
-      //     ? CupertinoContextMenu.kBackgroundColor
-      //     : CupertinoColors.black,
-      // physics: NeverScrollableScrollPhysics(),
       navigationBar: CupertinoNavigationBar(
+        previousPageTitle: "Home",
         middle: Text("Account and Settings"),
-
-        // largeTitle: Text("Settings"),
-        // stretch: true,
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -47,6 +42,17 @@ class AccountAndSettingsPage extends StatelessWidget {
                     ),
                     leadingText: "Theme mode",
                     trailingText: "System default",
+                  ),
+                  TileElement(
+                    onTap: () async {
+                      await databaseFunctionality.deleteAllNotes();
+                    },
+                    color: Colors.redAccent,
+                    leadingIcon: Icon(
+                      CupertinoIcons.trash,
+                      color: Colors.white,
+                    ),
+                    leadingText: "Delete all notes",
                   ),
                 ],
               ),
@@ -80,92 +86,12 @@ class AccountAndSettingsPage extends StatelessWidget {
                   TileElement(
                     color: Colors.red,
                     leadingIcon: Icon(
-                      CupertinoIcons.delete,
+                      CupertinoIcons.person,
                       color: Colors.white,
                     ),
                     leadingText: "Delete Account",
                     trailingText: null,
                   ),
-
-                  // CupertinoListTile(
-                  //   leadingSize: 35,
-                  //   onTap: () {},
-                  //   leading: Stack(
-                  //     alignment: .center,
-                  //     children: [
-                  //       Container(
-                  //         decoration: BoxDecoration(
-                  //           borderRadius: BorderRadius.circular(2),
-                  //           color: Colors.blue,
-                  //         ),
-                  //       ),
-                  //       Icon(CupertinoIcons.person, color: Colors.white),
-                  //     ],
-                  //   ),
-                  //   title: Text("Change name"),
-
-                  //   trailing: Row(
-                  //     spacing: 5,
-                  //     children: [
-                  //       Text("Ather Niyargar"),
-                  //       Icon(CupertinoIcons.chevron_right),
-                  //     ],
-                  //   ),
-                  // ),
-                  // CupertinoListTile(
-                  //   leadingSize: 35,
-                  //   onTap: () async {
-                  //     await authService.signOut();
-                  //     // if (!context.mounted) return;
-                  //     // Navigator.popUntil(context, ModalRoute.withName('/'));
-                  //   },
-                  //   leading: Stack(
-                  //     alignment: .center,
-                  //     children: [
-                  //       Container(
-                  //         decoration: BoxDecoration(
-                  //           borderRadius: BorderRadius.circular(2),
-                  //           color: Colors.orange,
-                  //         ),
-                  //       ),
-                  //       Icon(CupertinoIcons.power, color: Colors.white),
-                  //     ],
-                  //   ),
-                  //   title: Text("Sign Out"),
-
-                  //   trailing: Row(
-                  //     spacing: 5,
-                  //     children: [
-                  //       // Text("Ather Niyargar"),
-                  //       Icon(CupertinoIcons.chevron_right),
-                  //     ],
-                  //   ),
-                  // ),
-                  // CupertinoListTile(
-                  //   leadingSize: 35,
-                  //   onTap: () {},
-                  //   leading: Stack(
-                  //     alignment: .center,
-                  //     children: [
-                  //       Container(
-                  //         decoration: BoxDecoration(
-                  //           borderRadius: BorderRadius.circular(2),
-                  //           color: Colors.red,
-                  //         ),
-                  //       ),
-                  //       Icon(CupertinoIcons.delete, color: Colors.white),
-                  //     ],
-                  //   ),
-                  //   title: Text("Delete Account"),
-
-                  //   trailing: Row(
-                  //     spacing: 5,
-                  //     children: [
-                  //       // Text("Delete Account"),
-                  //       Icon(CupertinoIcons.chevron_right),
-                  //     ],
-                  //   ),
-                  // ),
                 ],
               ),
             ],

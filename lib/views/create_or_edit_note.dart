@@ -1,107 +1,114 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Divider;
+import 'package:notes_app/backend/database_functionality.dart';
 
-class CreateNotePage extends StatefulWidget {
-  const new({super.key});
+class CreateOrEditNotePage extends StatefulWidget {
+  final String? title;
+  final String? content;
+  final int? id;
+  const new({super.key, this.id, this.title, this.content});
 
   @override
-  State<CreateNotePage> createState() => _CreateNotePageState();
+  State<CreateOrEditNotePage> createState() => _CreateOrEditNotePageState();
 }
 
-class _CreateNotePageState extends State<CreateNotePage> {
-  late final TextEditingController _controller;
+class _CreateOrEditNotePageState extends State<CreateOrEditNotePage> {
   late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
+
+  late final DatabaseFunctionality _databaseFunctionality;
+
+  int? tempSno;
+
+  bool isNoteEdited = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    tempSno = widget.id;
+
     _titleController = TextEditingController();
+    _contentController = TextEditingController();
+    _databaseFunctionality = DatabaseFunctionality();
+    _titleController.text = widget.title ?? "";
+    _contentController.text = widget.content ?? "";
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _titleController.dispose();
+    _contentController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        automaticallyImplyLeading: true,
-        // previousPageTitle: "Tt",
-        // bottom: PreferredSize(preferredSize: .new(0, 0), child: SizedBox.shrink()),
-        // padding: EdgeInsetsDirectional.only(top: 10, start: 10, end: 10, bottom: 10),
-        middle: Text("Create Note"),
-        // leading: CupertinoButton(
-        //   // alignment: .centerLeft,
-        //   // minimumSize: Size(14, 14),
-        //   // padding: EdgeInsets.all(8),
-        //   // sizeStyle: .small,
-        //   child: Text("Exit"),
-        //   // child: Icon(CupertinoIcons.person_crop_circle, size: 25),
-        //   onPressed: () {},
-        // ),
-        leading: CupertinoButton(
-          sizeStyle: .medium,
-          child: Text("", style: .new(fontSize: 18)),
-          // child: Icon(CupertinoIcons.person_crop_circle, size: 25),
-          onPressed: () {},
-        ),
-        // leading: CupertinoButton(onPressed: () {Navigator.pop(context);}, sizeStyle: .small,child: Text("Exit"),),
-        trailing: CupertinoButton(
-          sizeStyle: .small,
-          child: Text("Save", style: .new(fontSize: 18)),
-          // child: Icon(CupertinoIcons.person_crop_circle, size: 25),
-          onPressed: () {},
-        ),
-        // trailing: CupertinoButton(
-        //   onPressed: () {},
-        //   sizeStyle: .medium,
-        //   child: Text("Save"),
-        // ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 10, right: 10),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Divider(color: const Color.fromARGB(126, 153, 153, 153)),
-                Flexible(
-                  // fit: .tight,
-                  flex: 0,
-                  child: CupertinoTextField(
-                    // scrollPhysics: NeverScrollableScrollPhysics(),
-                    placeholder: "Title",
-                    controller: _titleController,
-                    style: TextStyle(fontSize: 32, fontWeight: .bold),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
 
-                    // keyboardType: .multiline,
-                    // expands: true,
-                    // maxLines: null,
-                    // minLines: null,
+        final title = _titleController.text.trim();
+        final content = _contentController.text;
+
+        if (title.isEmpty && content.isEmpty) {
+          Navigator.pop(context, false);
+          return;
+        }
+        if (title == widget.title && content == widget.content) {
+          Navigator.pop(context, false);
+          return;
+        }
+
+        await _databaseFunctionality.insertOrUpdateNote(
+          context,
+          tempSno ?? widget.id,
+          title,
+          content,
+        );
+        if (!context.mounted) return;
+        Navigator.pop(context, true);
+      },
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          automaticallyImplyLeading: false,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 10, right: 10),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Flexible(
+                    flex: 0,
+                    child: CupertinoTextField(
+                      placeholder: "Title",
+                      controller: _titleController,
+                      style: TextStyle(fontSize: 32, fontWeight: .bold),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: .new(0)),
+                      ),
+                    ),
+                  ),
+                  Divider(color: const Color.fromARGB(126, 153, 153, 153)),
+                  CupertinoTextField(
+                    textAlignVertical: .top,
+
+                    placeholder: "Text",
+                    controller: _contentController,
+                    style: TextStyle(fontSize: 18),
+                    keyboardType: .multiline,
+                    expands: true,
+                    maxLines: null,
+                    minLines: null,
+
                     decoration: BoxDecoration(
                       border: Border.all(color: .new(0)),
                     ),
                   ),
-                ),
-                Divider(color: const Color.fromARGB(126, 153, 153, 153)),
-                CupertinoTextField(
-                  textAlignVertical: .top,
-
-                  placeholder: "Text",
-                  controller: _controller,
-                  style: TextStyle(fontSize: 18),
-                  keyboardType: .multiline,
-                  expands: true,
-                  maxLines: null,
-                  minLines: null,
-
-                  decoration: BoxDecoration(border: Border.all(color: .new(0))),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

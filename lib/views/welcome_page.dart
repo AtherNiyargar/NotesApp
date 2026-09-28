@@ -1,14 +1,22 @@
 import 'package:flutter/cupertino.dart';
+// import 'package:hcaptcha/hcaptcha.dart';
 import 'package:notes_app/views/login_page.dart';
 
+// Future<String?> showHCaptcha(BuildContext context) {
+//   return showModalBottomSheet<String>(
+//     context: context,
+//     isScrollControlled: true,
+//     builder: (_) => const SizedBox(height: 550, child: _HCaptchaView()),
+//   );
+// }
+
+
 class WelcomePage extends StatelessWidget {
-
   const new({super.key});
-
-  
 
   @override
   Widget build(BuildContext context) {
+    // HCaptcha.init(siteKey: "160044e0-e92e-46c8-9b54-66be0f78cb64");
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar.large(
         automaticallyImplyLeading: false,

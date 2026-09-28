@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:notes_app/views/account_and_settings_page.dart';
-import 'package:notes_app/views/create_note.dart';
+import 'package:notes_app/views/create_or_edit_note.dart';
 import 'package:notes_app/views/create_todo_page.dart';
 import 'package:notes_app/views/home_page.dart';
 import 'package:notes_app/views/login_page.dart';
@@ -39,7 +39,7 @@ void main() async {
         "/signup_page": (_) => SignupPage(),
         "/login_page": (_) => LoginPage(),
         "/home_page": (_) => HomePage(),
-        "/create_note_page": (_) => CreateNotePage(),
+        "/create_note_page": (_) => CreateOrEditNotePage(),
         "/todo_page": (_) => TodoPage(),
         "/create_todo_page": (_) => CreateTodoPage(),
         "/account_and_settings_page": (_) => AccountAndSettingsPage(),

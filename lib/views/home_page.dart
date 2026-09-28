@@ -1,270 +1,207 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart' show Theme, Colors;
+import 'package:notes_app/backend/database_functionality.dart';
+import 'package:notes_app/backend/variables/notes.dart';
 import 'package:notes_app/elements/notes_preview.dart';
+import 'package:notes_app/views/create_or_edit_note.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const new({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final DatabaseFunctionality _databaseFunctionality;
+
+  @override
+  void initState() {
+    super.initState();
+    _databaseFunctionality = DatabaseFunctionality();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // print("=========CHECK=========");
+    // showDialogs(context, title: "Refershed");
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     return CupertinoPageScaffold(
       child: Padding(
         padding: const EdgeInsets.only(top: 10),
         child: SafeArea(
           child: CustomScrollView(
-            // shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
             slivers: [
               CupertinoSliverNavigationBar.search(
+
                 trailing: CupertinoButton(
                   sizeStyle: .small,
                   child: Icon(CupertinoIcons.person_crop_circle, size: 25),
                   onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      "/account_and_settings_page",
-                      // PageTransition(type: .leftToRight,
-                      // curve: Curves.linearToEaseOut,
-                      // duration: Duration(milliseconds: 400),
-                      // child: AccountPage()
-                      // ),
-                      // CupertinoPageRoute(
-                      //   // title: "Accounts",
-                      //   // fullscreenDialog: true,
-                      //   // barrierDismissible: true,
-                      //   // settings: RouteSettings(
-
-                      //   // ),
-                      //   maintainState: false,
-                      //   builder: (context) {
-                      //     return AccountPage();
-                      //   },
-                      // ),
-                    );
+                    Navigator.pushNamed(context, "/account_and_settings_page");
                   },
                 ),
-                // trailing:
                 searchField: CupertinoSearchTextField(
-                  // placeholder: searchIsActive ? 'Enter search text' : 'Search',
                   onChanged: (String value) {},
                 ),
 
-                largeTitle: Text("Notes App"),
+                largeTitle: Text("Home"),
                 bottomMode: .always,
               ),
-
-              SliverFillRemaining(
-                // fillOverscroll: true,
-                // hasScrollBody: true,
-                // child: Stack(
-                //   children: [
-                child: Column(
-                  // mainAxisAlignment: .start,
-                  // crossAxisAlignment: .start,
+              CupertinoSliverRefreshControl(
+                refreshIndicatorExtent: 40,
+                refreshTriggerPullDistance: 150,
+                onRefresh: () async {
+                  setState(() {});
+                },
+              ),
+              SliverToBoxAdapter(
+                child: Row(
+                  mainAxisAlignment: .spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: .spaceBetween,
-                      children: [
-                        CupertinoButton(
-                          padding: EdgeInsets.only(left: 20),
-                          sizeStyle: .large,
-                          child: Row(
-                            spacing: 10,
-                            children: [
-                              Icon(
-                                CupertinoIcons.line_horizontal_3_decrease,
-                                size: 24,
+                    CupertinoButton(
+                      padding: EdgeInsets.only(left: 20),
+                      sizeStyle: .large,
+                      child: Row(
+                        spacing: 10,
+                        children: [
+                          Icon(
+                            CupertinoIcons.line_horizontal_3_decrease,
+                            size: 24,
+                          ),
+                          Text(
+                            "Sort by",
+                            style: .new(
+                              color: CupertinoColors.systemBlue,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () async {
+                        _databaseFunctionality.deleteAllNotes();
+                      },
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.only(right: 20),
+                      sizeStyle: .large,
+
+                      child: Icon(CupertinoIcons.add, size: 25),
+                      onPressed: () {
+                        showCupertinoModalPopup(
+                          semanticsDismissible: true,
+                          barrierDismissible: true,
+                          useRootNavigator: true,
+
+                          context: context,
+                          builder: (context) => CupertinoActionSheet(
+                            title: Text("Create"),
+
+                            actions: [
+                              CupertinoActionSheetAction(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  final shouldRefresh =
+                                      await Navigator.of(context).push<bool>(
+                                        CupertinoPageRoute(
+                                          builder: (context) {
+                                            return CreateOrEditNotePage();
+                                          },
+                                        ),
+                                      );
+                                  if (shouldRefresh!) {
+                                    setState(() {});
+                                  }
+                                  // callBackFunction(shouldRefresh!);
+                                  // }
+                                  // if (_shouldRefresh) {
+                                  //   shouldRefresh(true);
+                                  // } else {
+
+                                  // }
+
+                                  // Navigator.pushNamed(
+                                  //   context,
+                                  //   "/create_note_page",
+                                  // );
+                                },
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.textformat),
+                                  optionName: "Note",
+                                ),
                               ),
-                              Text(
-                                "Sort by",
-                                style: .new(
-                                  color: CupertinoColors.systemBlue,
-                                  fontSize: 16,
+
+                              CupertinoActionSheetAction(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  Navigator.pushNamed(context, "/todo_page");
+                                },
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.list_number),
+                                  optionName: "Todo list",
+                                ),
+                              ),
+                              CupertinoActionSheetAction(
+                                onPressed: () {},
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.mic),
+                                  optionName: "Transcribe",
                                 ),
                               ),
                             ],
                           ),
-                          onPressed: () {},
-                        ),
-                        CupertinoButton(
-                          padding: EdgeInsets.only(right: 20),
-                          sizeStyle: .large,
-
-                          child: Icon(CupertinoIcons.add, size: 25),
-                          onPressed: () {
-                            showCupertinoModalPopup(
-                              semanticsDismissible: true,
-                              barrierDismissible: true,
-                              useRootNavigator: true,
-
-                              context: context,
-                              builder: (context) => CupertinoActionSheet(
-                                title: Text("Create"),
-
-                                actions: [
-                                  // CupertinoActionSheetAction(onPressed: () {}, child: Icon(CupertinoIcons.add_circled)),
-                                  CupertinoActionSheetAction(
-                                    onPressed: () {
-                                      // Navigator.of(
-                                      //   context,
-                                      // ).pushNamedAndRemoveUntil(
-                                      //   "/create_page_route",
-                                      //   (_) => false,
-                                      //   // (route) => CreateNotePage(),
-                                      //   // CupertinoPageRoute(builder: (context) {
-                                      //   //   return CreateNotePage();
-                                      //   // },)
-                                      // );
-                                      Navigator.pop(context);
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/create_note_page",
-                                      );
-                                    },
-                                    child: const CreateOption(
-                                      icon: Icon(CupertinoIcons.textformat),
-                                      optionName: "Note",
-                                    ),
-                                  ),
-
-                                  CupertinoActionSheetAction(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      Navigator.pushNamed(
-                                        context,
-                                        "/todo_page",
-                                      );
-                                    },
-                                    child: const CreateOption(
-                                      icon: Icon(CupertinoIcons.list_number),
-                                      optionName: "Todo list",
-                                    ),
-                                  ),
-                                  CupertinoActionSheetAction(
-                                    onPressed: () {},
-                                    child: const CreateOption(
-                                      icon: Icon(CupertinoIcons.mic),
-                                      optionName: "Transcribe",
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        // padding: EdgeInsets.all(value),
-                        // physics: NeverScrollableScrollPhysics(),
-                        // shrinkWrap: true,
-                        itemCount: 10,
-                        // padding: EdgeInsets.symmetric(vertical: 10),
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: NotesPreview(),
-                          );
-                        },
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),
-                // Positioned(
-                //   bottom: 20,
-                //   right: 20,
-                //   child: LiquidGlassLayer(
-                //     child: LiquidGlass.withOwnLayer(
-                //       fake: true,
-                //       settings: LiquidGlassSettings(
-                //         ambientStrength: 999,
-                //         blur: 3,
-                //         lightIntensity: 1,
-                //         refractiveIndex: 1.2,
-                //         saturation: 50,
-                //         thickness: 100,
-                //         visibility: 0.7,
-                //         glassColor: themeMode == .dark
-                //             ? Colors.transparent
-                //             : Color.fromARGB(255, 98, 88, 88),
-                //       ),
-
-                //       shape: LiquidRoundedSuperellipse(borderRadius: 25),
-                //       glassContainsChild: true,
-                //       child: GestureDetector(
-                //         behavior: .opaque,
-                // onTap: () => showCupertinoModalPopup(
-                //   semanticsDismissible: true,
-                //   barrierDismissible: true,
-                //   useRootNavigator: true,
-
-                //   context: context,
-                //   builder: (context) => CupertinoActionSheet(
-                //     title: Text("Create"),
-
-                //     actions: [
-                //       // CupertinoActionSheetAction(onPressed: () {}, child: Icon(CupertinoIcons.add_circled)),
-                //       CupertinoActionSheetAction(
-                //         onPressed: () {
-                //           // Navigator.of(
-                //           //   context,
-                //           // ).pushNamedAndRemoveUntil(
-                //           //   "/create_page_route",
-                //           //   (_) => false,
-                //           //   // (route) => CreateNotePage(),
-                //           //   // CupertinoPageRoute(builder: (context) {
-                //           //   //   return CreateNotePage();
-                //           //   // },)
-                //           // );
-                //           Navigator.pop(context);
-                //           Navigator.pushNamed(
-                //             context,
-                //             "/create_note_page",
-                //           );
-                //         },
-                //         child: const CreateOption(
-                //           icon: Icon(CupertinoIcons.textformat),
-                //           optionName: "Note",
-                //         ),
-                //       ),
-
-                //       CupertinoActionSheetAction(
-                //         onPressed: () {},
-                //         child: const CreateOption(
-                //           icon: Icon(CupertinoIcons.list_number),
-                //           optionName: "Todo list",
-                //         ),
-                //       ),
-                //       CupertinoActionSheetAction(
-                //         onPressed: () {},
-                //         child: const CreateOption(
-                //           icon: Icon(CupertinoIcons.mic),
-                //           optionName: "Transcribe",
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                //         child: SizedBox.square(
-                //           dimension: 70,
-                //           child: Icon(
-                //             CupertinoIcons.create,
-                //             size: 30,
-                //             color: themeMode == .dark
-                //                 ? CupertinoColors.activeBlue
-                //                 : Colors.white,
-                //           ),
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                //   ],
-                // ),
               ),
+              FutureBuilder(
+                future: _databaseFunctionality.populateNotes(context),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == .done) {
+                    if (notesData.isNotEmpty) {
+                      return SliverList.builder(
+                        itemCount: notesData.length,
+
+                        itemBuilder: (context, index) {
+                          final note = notesData[index];
+                          return Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: NotesPreview(
+                              callBackFunction: (shouldRefresh) {
+                                if (shouldRefresh) {
+                                  setState(() {});
+                                }
+                              },
+                              id: note["id"],
+                              title: note["title"],
+                              content: note["content"],
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    return SliverFillRemaining(
+                      child: Center(child: Text("No notes found!")),
+                    );
+                  }
+                  return SliverFillRemaining(
+                    child: CupertinoActivityIndicator(),
+                  );
+                },
+              ),
+              // SliverList.builder(
+
+              //   itemCount: 10,
+              //   itemBuilder: (context, index) {
+              //     return Padding(
+              //       padding: const EdgeInsets.all(8),
+              //       child: NotesPreview(),
+              //     );
+              //   },
+              // ),
             ],
           ),
         ),
