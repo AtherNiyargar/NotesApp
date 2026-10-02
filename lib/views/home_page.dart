@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart' show Theme, Colors;
 import 'package:notes_app/backend/database_functionality.dart';
+import 'package:notes_app/backend/sync_notes_service.dart';
 import 'package:notes_app/backend/variables/notes.dart';
 import 'package:notes_app/elements/notes_preview.dart';
+import 'package:notes_app/elements/show_dialogs.dart';
 import 'package:notes_app/views/create_or_edit_note.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import "dart:isolate";
 
 class HomePage extends StatefulWidget {
   const new({super.key});
@@ -15,26 +21,63 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final DatabaseFunctionality _databaseFunctionality;
+  late Future<void> Function() loadApp;
+  SharedPreferences? _sharedPreferences;
+
+  Future<void> sortNotesAndRefresh() async {
+    final notesDataCopy = notesData;
+    final sortByCopy = sortBy;
+    notesData = await Isolate.run(() {
+      return sortNotes(sortByCopy, notesDataCopy);
+    });
+  }
+
+  Future<void> fetchDbNotesAndSortAndRefresh() async {
+    await _databaseFunctionality.populateNotes();
+    final notesDataCopy = notesData;
+    final sortByCopy = sortBy;
+      // print("=========== $notesData");
+    notesData = await Isolate.run(() {
+      return sortNotes(sortByCopy, notesDataCopy);
+    });
+  }
+
+  Future<void> _initApp() async {
+    await _databaseFunctionality.populateNotes();
+    _sharedPreferences ??= await SharedPreferences.getInstance();
+    sortBy = _sharedPreferences!.getString("sortBy") ?? "created_at_  asc";
+    final notesDataCopy = notesData;
+    final sortByCopy = sortBy;
+    notesData = await Isolate.run(() {
+      return sortNotes(sortByCopy, notesDataCopy);
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _databaseFunctionality = DatabaseFunctionality();
+    loadApp = _initApp;
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+  
+
+  
+  @override
   Widget build(BuildContext context) {
-    // print("=========CHECK=========");
-    // showDialogs(context, title: "Refershed");
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     return CupertinoPageScaffold(
       child: Padding(
         padding: const EdgeInsets.only(top: 10),
         child: SafeArea(
           child: CustomScrollView(
+            dragStartBehavior: .down,
+            // physics: LockableScrollPhysics(isLocked: () => _isMenuInteraction),
             slivers: [
               CupertinoSliverNavigationBar.search(
-
                 trailing: CupertinoButton(
                   sizeStyle: .small,
                   child: Icon(CupertinoIcons.person_crop_circle, size: 25),
@@ -53,6 +96,8 @@ class _HomePageState extends State<HomePage> {
                 refreshIndicatorExtent: 40,
                 refreshTriggerPullDistance: 150,
                 onRefresh: () async {
+                  await SyncNotesService().syncNotes();
+                  loadApp = fetchDbNotesAndSortAndRefresh;
                   setState(() {});
                 },
               ),
@@ -71,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                             size: 24,
                           ),
                           Text(
-                            "Sort by",
+                            "Sort",
                             style: .new(
                               color: CupertinoColors.systemBlue,
                               fontSize: 16,
@@ -80,7 +125,70 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       onPressed: () async {
-                        _databaseFunctionality.deleteAllNotes();
+                        showCupertinoModalPopup(
+                          semanticsDismissible: true,
+                          barrierDismissible: true,
+                          useRootNavigator: true,
+                          context: context,
+                          builder: (context) => CupertinoActionSheet(
+                            title: Text("Sort by"),
+                            actions: [
+                              CupertinoActionSheetAction(
+                                onPressed: () async {
+                                  loadApp = sortNotesAndRefresh;
+
+                                  sortBy = sortBy == "title_asc"
+                                      ? "title_desc"
+                                      : "title_asc";
+                                  await _sharedPreferences!.setString(
+                                    "sortBy",
+                                    sortBy,
+                                  );
+                                  setState(() {});
+                                },
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.textformat_abc),
+                                  optionName: "Title",
+                                ),
+                              ),
+                              CupertinoActionSheetAction(
+                                onPressed: () async {
+                                  loadApp = sortNotesAndRefresh;
+
+                                  sortBy = sortBy == "modified_at_asc"
+                                      ? "modified_at_desc"
+                                      : "modified_at_asc";
+                                  await _sharedPreferences!.setString(
+                                    "sortBy",
+                                    sortBy,
+                                  );
+                                  setState(() {});
+                                },
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.pencil),
+                                  optionName: "Modified",
+                                ),
+                              ),
+                              CupertinoActionSheetAction(
+                                onPressed: () async {
+                                  loadApp = sortNotesAndRefresh;
+                                  sortBy = sortBy == "created_at_asc"
+                                      ? "created_at_desc"
+                                      : "created_at_asc";
+                                  await _sharedPreferences!.setString(
+                                    "sortBy",
+                                    sortBy,
+                                  );
+                                  setState(() {});
+                                },
+                                child: const CreateOption(
+                                  icon: Icon(CupertinoIcons.time),
+                                  optionName: "Created",
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                     CupertinoButton(
@@ -93,11 +201,9 @@ class _HomePageState extends State<HomePage> {
                           semanticsDismissible: true,
                           barrierDismissible: true,
                           useRootNavigator: true,
-
                           context: context,
                           builder: (context) => CupertinoActionSheet(
                             title: Text("Create"),
-
                             actions: [
                               CupertinoActionSheetAction(
                                 onPressed: () async {
@@ -111,27 +217,15 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       );
                                   if (shouldRefresh!) {
+                                    loadApp = fetchDbNotesAndSortAndRefresh;
                                     setState(() {});
                                   }
-                                  // callBackFunction(shouldRefresh!);
-                                  // }
-                                  // if (_shouldRefresh) {
-                                  //   shouldRefresh(true);
-                                  // } else {
-
-                                  // }
-
-                                  // Navigator.pushNamed(
-                                  //   context,
-                                  //   "/create_note_page",
-                                  // );
                                 },
                                 child: const CreateOption(
                                   icon: Icon(CupertinoIcons.textformat),
                                   optionName: "Note",
                                 ),
                               ),
-
                               CupertinoActionSheetAction(
                                 onPressed: () {
                                   Navigator.pop(context);
@@ -158,26 +252,30 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               FutureBuilder(
-                future: _databaseFunctionality.populateNotes(context),
+                future: loadApp(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == .done) {
                     if (notesData.isNotEmpty) {
                       return SliverList.builder(
                         itemCount: notesData.length,
-
                         itemBuilder: (context, index) {
                           final note = notesData[index];
                           return Padding(
                             padding: const EdgeInsets.all(8),
                             child: NotesPreview(
-                              callBackFunction: (shouldRefresh) {
+
+                              callBackFunction: (shouldRefresh) async {
                                 if (shouldRefresh) {
+                                  loadApp = fetchDbNotesAndSortAndRefresh;
                                   setState(() {});
                                 }
                               },
                               id: note["id"],
                               title: note["title"],
                               content: note["content"],
+                              createdAt: note["created_at"],
+                              modifiedAt: note["modified_at"],
+                              pinned: note["pinned"],
                             ),
                           );
                         },
@@ -186,22 +284,17 @@ class _HomePageState extends State<HomePage> {
                     return SliverFillRemaining(
                       child: Center(child: Text("No notes found!")),
                     );
+                  } else if (snapshot.hasError) {
+                    showDialogs(
+                      context,
+                      title: "Failed to get notes. Please try again",
+                    );
                   }
                   return SliverFillRemaining(
                     child: CupertinoActivityIndicator(),
                   );
                 },
               ),
-              // SliverList.builder(
-
-              //   itemCount: 10,
-              //   itemBuilder: (context, index) {
-              //     return Padding(
-              //       padding: const EdgeInsets.all(8),
-              //       child: NotesPreview(),
-              //     );
-              //   },
-              // ),
             ],
           ),
         ),

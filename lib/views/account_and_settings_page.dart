@@ -20,55 +20,55 @@ class AccountAndSettingsPage extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              CupertinoFormSection(
-                header: Text("App Settings"),
-                children: [
-                  TileElement(
-                    onTap: () async {},
-                    color: Colors.deepPurpleAccent,
-                    leadingIcon: Icon(
-                      CupertinoIcons.textformat_size,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Font size",
-                    trailingText: "21",
-                  ),
-                  TileElement(
-                    onTap: () async {},
-                    color: Colors.grey,
-                    leadingIcon: Icon(
-                      CupertinoIcons.gear_solid,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Theme mode",
-                    trailingText: "System default",
-                  ),
-                  TileElement(
-                    onTap: () async {
-                      await databaseFunctionality.deleteAllNotes();
-                    },
-                    color: Colors.redAccent,
-                    leadingIcon: Icon(
-                      CupertinoIcons.trash,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Delete all notes",
-                  ),
-                ],
-              ),
+              // CupertinoFormSection(
+              //   header: Text("App Settings"),
+              //   children: [
+              //     // TileElement(
+              //     //   onTap: () async {},
+              //     //   color: Colors.deepPurpleAccent,
+              //     //   leadingIcon: Icon(
+              //     //     CupertinoIcons.textformat_size,
+              //     //     color: Colors.white,
+              //     //   ),
+              //     //   leadingText: "Font size",
+              //     //   trailingText: "21",
+              //     // ),
+              //     // TileElement(
+              //     //   onTap: () async {},
+              //     //   color: Colors.grey,
+              //     //   leadingIcon: Icon(
+              //     //     CupertinoIcons.gear_solid,
+              //     //     color: Colors.white,
+              //     //   ),
+              //     //   leadingText: "Theme mode",
+              //     //   trailingText: "System default",
+              //     // ),
+              //     // TileElement(
+              //     //   onTap: () async {
+              //     //     // await databaseFunctionality._deleteAllNotes();
+              //     //   },
+              //     //   color: Colors.redAccent,
+              //     //   leadingIcon: Icon(
+              //     //     CupertinoIcons.trash,
+              //     //     color: Colors.white,
+              //     //   ),
+              //     //   leadingText: "Delete all notes",
+              //     // ),
+              //   ],
+              // ),
               CupertinoFormSection(
                 header: Text("Account Settings"),
                 children: [
-                  TileElement(
-                    onTap: () async {},
-                    color: Colors.blue,
-                    leadingIcon: Icon(
-                      CupertinoIcons.person,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Change name",
-                    trailingText: "Ather Niyargar",
-                  ),
+                  // TileElement(
+                  //   onTap: () async {},
+                  //   color: Colors.blue,
+                  //   leadingIcon: Icon(
+                  //     CupertinoIcons.person,
+                  //     color: Colors.white,
+                  //   ),
+                  //   leadingText: "Change name",
+                  //   trailingText: "Ather Niyargar",
+                  // ),
                   TileElement(
                     onTap: () async {
                       await authService.signOut();
@@ -83,15 +83,15 @@ class AccountAndSettingsPage extends StatelessWidget {
                     leadingText: "Sign Out",
                     trailingText: null,
                   ),
-                  TileElement(
-                    color: Colors.red,
-                    leadingIcon: Icon(
-                      CupertinoIcons.person,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Delete Account",
-                    trailingText: null,
-                  ),
+                  // TileElement(
+                  //   color: Colors.red,
+                  //   leadingIcon: Icon(
+                  //     CupertinoIcons.person,
+                  //     color: Colors.white,
+                  //   ),
+                  //   leadingText: "Delete Account",
+                  //   trailingText: null,
+                  // ),
                 ],
               ),
             ],

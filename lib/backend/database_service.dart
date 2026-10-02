@@ -1,140 +1,3 @@
-/*
-// hcaptcha_auth.dart
-// Needs in pubspec.yaml:
-//   webview_flutter: ^4.0.0
-//   supabase_flutter: ^2.0.0
-
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-
-// Use the test key while developing, then switch to your real site key.
-const String hCaptchaSiteKey = '10000000-ffff-ffff-ffff-000000000001';
-
-// Must be a domain added to your site in the hCaptcha dashboard
-// (not needed for the test key).
-const String hCaptchaBaseUrl = 'https://yourdomain.com';
-
-/// Shows the captcha in a bottom sheet. Returns the token, or null if closed.
-Future<String?> showHCaptcha(BuildContext context) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => const SizedBox(height: 550, child: _HCaptchaView()),
-  );
-}
-
-class _HCaptchaView extends StatefulWidget {
-  const _HCaptchaView();
-
-  @override
-  State<_HCaptchaView> createState() => _HCaptchaViewState();
-}
-
-class _HCaptchaViewState extends State<_HCaptchaView> {
-  late final WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-
-    const html = '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://js.hcaptcha.com/1/api.js?onload=onLoad&render=explicit" async defer></script>
-  <style>body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0}</style>
-</head>
-<body>
-  <div id="captcha"></div>
-  <script>
-    function onLoad() {
-      hcaptcha.render('captcha', {
-        sitekey: '$hCaptchaSiteKey',
-        callback: function(token) { Captcha.postMessage(token); }
-      });
-    }
-  </script>
-</body>
-</html>
-''';
-
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..addJavaScriptChannel(
-        'Captcha',
-        onMessageReceived: (msg) {
-          if (msg.message.isNotEmpty && mounted) {
-            Navigator.of(context).pop(msg.message);
-          }
-        },
-      )
-      ..loadHtmlString(html, baseUrl: hCaptchaBaseUrl);
-  }
-
-  @override
-  Widget build(BuildContext context) => WebViewWidget(controller: _controller);
-}
-
-// ---------------------------------------------------------------------------
-// Supabase helpers. Call these from your buttons.
-// ---------------------------------------------------------------------------
-
-final _auth = Supabase.instance.client.auth;
-
-Future<void> signInWithCaptcha(
-  BuildContext context,
-  String email,
-  String password,
-) async {
-  final token = await showHCaptcha(context);
-  if (token == null) return; // user closed the captcha
-
-  try {
-    await _auth.signInWithPassword(
-      email: email,
-      password: password,
-      captchaToken: token,
-    );
-  } on AuthException catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
-    }
-  }
-}
-
-Future<void> signUpWithCaptcha(
-  BuildContext context,
-  String email,
-  String password,
-) async {
-  final token = await showHCaptcha(context);
-  if (token == null) return;
-
-  try {
-    await _auth.signUp(
-      email: email,
-      password: password,
-      captchaToken: token,
-    );
-  } on AuthException catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
-    }
-  }
-}
-
-// Example usage in a button:
-//
-// ElevatedButton(
-//   onPressed: () => signInWithCaptcha(context, emailCtrl.text, passCtrl.text),
-//   child: const Text('Log in'),
-// )
-// */
-
 import 'dart:io' show Directory;
 
 import 'package:path/path.dart' show join;
@@ -143,20 +6,51 @@ import 'package:sqflite/sqflite.dart';
 
 class UnableToInsertOrUpdateException implements Exception {}
 
+class UnableToDeleteException implements Exception {}
+
 const String dbName = "notes_app.db";
-const String tableName = "notesTable";
-const String id = 'id';
+const String notesTable = "notesTable";
+const String _id = 'id';
 const String _title = "title";
 const String _content = "content";
-// const String _dateCreated = "date_created";
+const String _createdAt = "created_at";
+const String _modifiedAt = "modified_at";
+const String _pinned = "pinned";
 
 const String createQuery =
     '''
-  CREATE TABLE $tableName (
-    $id INTEGER NOT NULL UNIQUE,
+  CREATE TABLE $notesTable (
+    $_id INTEGER NOT NULL UNIQUE,
     $_title TEXT,
     $_content TEXT,
-    PRIMARY KEY ($id AUTOINCREMENT)
+    $_createdAt TEXT NOT NULL UNIQUE,
+    $_modifiedAt TEXT NOT NULL UNIQUE,
+    $_pinned TEXT UNIQUE,
+    PRIMARY KEY ($_id AUTOINCREMENT)
+  );
+''';
+
+const String toUploadTable = "toUploadTable";
+
+const String createToUploadTable =
+    '''
+  CREATE TABLE $toUploadTable (
+    $_id INTEGER NOT NULL UNIQUE,
+    $_title TEXT,
+    $_content TEXT,
+    $_createdAt TEXT NOT NULL UNIQUE,
+    $_modifiedAt TEXT NOT NULL UNIQUE,
+    $_pinned TEXT UNIQUE,
+    PRIMARY KEY ($_id AUTOINCREMENT)
+  );
+''';
+
+const String toDeleteTable = "toDeleteTable";
+
+const String createToDeleteTable =
+    '''
+  CREATE TABLE $toDeleteTable (
+    $_createdAt TEXT NOT NULL UNIQUE
   );
 ''';
 
@@ -179,6 +73,8 @@ class DatabaseService {
       version: 1,
       onCreate: (db, version) async {
         await db.execute(createQuery);
+        await db.execute(createToUploadTable);
+        await db.execute(createToDeleteTable);
       },
     );
   }
@@ -199,39 +95,153 @@ class DatabaseService {
       }
       return id;
     }
+
     Database db = await getDb();
-    final result = await db.update(
-      tableName,
-      {id: sn, _title: title, _content: content},
-      where: "$id = ?",
+
+    final currentTime = DateTime.now().toUtc().toIso8601String();
+
+    final result1 = await db.update(
+      notesTable,
+      {_title: title, _content: content, _modifiedAt: currentTime},
+      where: "$_id = ?",
       whereArgs: [sn],
     );
-    if (result == 0) {
+
+    if (result1 == 0) {
       throw UnableToInsertOrUpdateException();
+    }
+
+    final result2 = await db.update(
+      toUploadTable,
+      {_title: title, _content: content, _modifiedAt: currentTime},
+      where: "$_id = ?",
+      whereArgs: [sn],
+    );
+
+    if (result2 == 0) {
+      final toInsertRow = await db.query(
+        notesTable,
+        columns: [_id, _title, _content, _createdAt, _modifiedAt],
+        where: "$_id = ?",
+        whereArgs: [sn],
+        limit: 1,
+      );
+
+      final result = await db.insert(toUploadTable, toInsertRow[0]);
+      if (result == 0) {
+        // print("========= IAMHERE");
+        throw UnableToInsertOrUpdateException();
+      }
     }
     return null;
   }
 
   Future insertNote(String? title, String? content) async {
     Database db = await getDb();
-    final result = await db.insert(tableName, {
+
+    final currentTime = DateTime.now().toUtc().toIso8601String();
+
+    final result1 = await db.insert(notesTable, {
       _title: title,
       _content: content,
+      _createdAt: currentTime,
+      _modifiedAt: currentTime,
     });
-    if (result == 0) {
+
+    final result2 = await db.insert(toUploadTable, {
+      _title: title,
+      _content: content,
+      _createdAt: currentTime,
+      _modifiedAt: currentTime,
+    });
+
+    if (result1 == 0 || result2 == 0) {
       throw UnableToInsertOrUpdateException();
     } else {
-      return result;
+      return result1;
     }
+  }
+
+  Future getToUploadNotes() async {
+    Database db = await getDb();
+    return await db.query(
+      toUploadTable,
+      columns: [_title, _content, _createdAt, _modifiedAt, _pinned],
+    );
+  }
+
+  Future nukeToUploadNotes() async {
+    Database db = await getDb();
+    await db.delete(toUploadTable);
   }
 
   Future<List<Map<String, dynamic>>> getAllNotes() async {
     Database db = await getDb();
-    return await db.query(tableName);
+    return await db.query(notesTable);
   }
 
   Future deleteAllNotes() async {
     Database db = await getDb();
-    await db.delete(tableName);
+    await db.delete(notesTable);
+  }
+
+  Future insertAllNotes(List<Map<String, dynamic>> downloadedNotes) async {
+    Database db = await getDb();
+    Batch batch = db.batch();
+    for (var note in downloadedNotes) {
+      batch.insert(notesTable, note, conflictAlgorithm: .replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future deleteANote(String createdAt) async {
+    Database db = await getDb();
+    int result;
+    result = await db.delete(
+      notesTable,
+      where: "$_createdAt = ?",
+      whereArgs: [createdAt],
+    );
+    // if (result != 1) throw UnableToDeleteException();
+
+    result = await db.delete(
+      toUploadTable,
+      where: "$_createdAt = ?",
+      whereArgs: [createdAt],
+    );
+    // if (result != 1) throw UnableToDeleteException();
+
+    await db.insert(toDeleteTable, {_createdAt: createdAt});
+  }
+
+  Future<List<Map<String, Object?>>> getAllToDeleteRows() async {
+    Database db = await getDb();
+    // print("============ -i am here");
+    return await db.query(toDeleteTable);
+  }
+
+  Future pinOrUnpinNote(
+    String? pinTime,
+    String createdAt,
+    Map<String, Object?> entry,
+  ) async {
+    Database db = await getDb();
+    // print("========= $pinTime");
+    await db.update(
+      notesTable,
+      {_pinned: pinTime},
+      where: "$_createdAt = ?",
+      whereArgs: [createdAt],
+    );
+    final result = await db.update(
+      toUploadTable,
+      {_pinned: pinTime},
+      where: "$_createdAt = ?",
+      whereArgs: [createdAt],
+    );
+    if (result != 1) {
+      await db.insert(toUploadTable, entry);
+    }
+    // print("========= ${await db.query(toUploadTable)}");
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:notes_app/backend/supabase_client_service.dart';
 import 'package:notes_app/elements/show_dialogs.dart' show showDialogs;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -6,11 +7,12 @@ class InvalidOtpException implements Exception {}
 
 class AuthService {
   SupabaseClient? _supabase;
-
-  SupabaseClient getClient() => _supabase ??= Supabase.instance.client;
+  SupabaseClient _getClient() {
+    return _supabase ??= SupabaseClientService().getClient();
+  }
 
   Future signUp(String email, String password, String captcha) async {
-    final supabase = getClient();
+    final supabase = _getClient();
     await supabase.auth.signUp(
       email: email,
       password: password,
@@ -19,7 +21,7 @@ class AuthService {
   }
 
   Future verifyOtp(BuildContext context, String otp, String email) async {
-    final supabase = getClient();
+    final supabase = _getClient();
     try {
       if (otp.isEmpty || otp.trim().length != 8) {
         throw InvalidOtpException();
@@ -60,32 +62,15 @@ class AuthService {
   }
 
   Future signOut() async {
-    await getClient().auth.signOut();
+    await _getClient().auth.signOut();
   }
-
-  // Future signInWithOtp(String email) async {
-  //   final supabase = getClient();
-  //   await supabase.auth.signInWithOtp(email: email, shouldCreateUser: true);
-  // }
-
-  // Future verifyEmailOtp(BuildContext context, String otp, String email) async {
-  //   final supabase = getClient();
-  //   AuthResponse authResp = await supabase.auth.verifyOTP(
-  //     type: .email,
-  //     token: otp,
-  //     email: email,
-  //   );
-  //   if (authResp.session != null && context.mounted) {
-  //     Navigator.pushNamedAndRemoveUntil(context, "/", (route) => false);
-  //   }
-  // }
 
   Future loginWithPassword(
     String email,
     String password,
     String captchaToken,
   ) async {
-    final supabase = getClient();
+    final supabase = _getClient();
     return await supabase.auth.signInWithPassword(
       email: email,
       password: password,
