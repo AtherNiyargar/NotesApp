@@ -16,8 +16,9 @@ class SyncNotesService {
       .select("id, created_at, title, content, modified_at, pinned");
 
   Future _uploadNotes() async {
+
     final notesToUpload = await databaseFunctionality!.getNotesToUpload();
-    print("||||||||||||| $notesToUpload");
+    // print("=============== $notesToUpload");
     await client!.from("notes").upsert(notesToUpload, onConflict: "created_at");
     await databaseFunctionality!.nukeToUploadNotes();
   }
@@ -40,7 +41,6 @@ class SyncNotesService {
     await _deleteFromServer();
     await _uploadNotes();
     final downloadedData = await _downloadNotes();
-    // print("|||||||||||||||||||||||||||||||||||| $downloadedData");
     await databaseFunctionality!.nukeNotesTablewithDownloadedNotes(
       downloadedData,
     );

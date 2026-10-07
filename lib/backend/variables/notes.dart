@@ -11,13 +11,15 @@
 
 List<Map<String, dynamic>> notesData = [];
 
+List<Map<String, dynamic>> saerchedNotes = [];
+
 String sortBy = "";
 
 List<Map<String, dynamic>> sortNotes(
-  String sortBy,
+  String sortByCopy,
   List<Map<String, dynamic>> notesDataCopy,
 ) {
-  switch (sortBy) {
+  switch (sortByCopy) {
     case "created_at_asc":
       notesDataCopy.sort((b, a) => a["created_at"].compareTo(b["created_at"]));
       break;
@@ -50,5 +52,16 @@ List<Map<String, dynamic>> sortNotes(
       );
       break;
   }
-  return notesDataCopy;
+
+  final List<Map<String, dynamic>> unpinned = [];
+  final List<Map<String, dynamic>> pinned = [];
+  for (Map<String, dynamic> row in notesDataCopy) {
+    if (row["pinned"] != null) {
+      pinned.add(row);
+    } else {
+      unpinned.add(row);
+    }
+  }
+  pinned.sort((b, a) => a["pinned"].compareTo(b["pinned"]));
+  return [...pinned, ...unpinned];
 }

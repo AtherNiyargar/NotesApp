@@ -11,93 +11,52 @@ class AccountAndSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AuthService authService = .new();
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        previousPageTitle: "Home",
-        middle: Text("Account and Settings"),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
+    return CustomScrollView(
+      slivers: [
+        CupertinoSliverNavigationBar(
+          transitionBetweenRoutes: false,
+          largeTitle: Text("Settings"),
+        ),
+        SliverToBoxAdapter(
+          child: CupertinoFormSection(
+            header: Text("Account Settings"),
             children: [
-              // CupertinoFormSection(
-              //   header: Text("App Settings"),
-              //   children: [
-              //     // TileElement(
-              //     //   onTap: () async {},
-              //     //   color: Colors.deepPurpleAccent,
-              //     //   leadingIcon: Icon(
-              //     //     CupertinoIcons.textformat_size,
-              //     //     color: Colors.white,
-              //     //   ),
-              //     //   leadingText: "Font size",
-              //     //   trailingText: "21",
-              //     // ),
-              //     // TileElement(
-              //     //   onTap: () async {},
-              //     //   color: Colors.grey,
-              //     //   leadingIcon: Icon(
-              //     //     CupertinoIcons.gear_solid,
-              //     //     color: Colors.white,
-              //     //   ),
-              //     //   leadingText: "Theme mode",
-              //     //   trailingText: "System default",
-              //     // ),
-              //     // TileElement(
-              //     //   onTap: () async {
-              //     //     // await databaseFunctionality._deleteAllNotes();
-              //     //   },
-              //     //   color: Colors.redAccent,
-              //     //   leadingIcon: Icon(
-              //     //     CupertinoIcons.trash,
-              //     //     color: Colors.white,
-              //     //   ),
-              //     //   leadingText: "Delete all notes",
-              //     // ),
-              //   ],
-              // ),
-              CupertinoFormSection(
-                header: Text("Account Settings"),
-                children: [
-                  // TileElement(
-                  //   onTap: () async {},
-                  //   color: Colors.blue,
-                  //   leadingIcon: Icon(
-                  //     CupertinoIcons.person,
-                  //     color: Colors.white,
-                  //   ),
-                  //   leadingText: "Change name",
-                  //   trailingText: "Ather Niyargar",
-                  // ),
-                  TileElement(
-                    onTap: () async {
-                      await authService.signOut();
-                      if (!context.mounted) return;
-                      Navigator.popUntil(context, ModalRoute.withName('/'));
+              TileElement(
+                onTap: () async {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+
+                  showCupertinoDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) {
+                      return const CupertinoAlertDialog(
+                        title: Column(
+                          children: [
+                            Text("Signing Out"),
+                            SizedBox(height: 20),
+                            CupertinoActivityIndicator(),
+                          ],
+                        ),
+                      );
                     },
-                    color: Colors.orange,
-                    leadingIcon: Icon(
-                      CupertinoIcons.power,
-                      color: Colors.white,
-                    ),
-                    leadingText: "Sign Out",
-                    trailingText: null,
-                  ),
-                  // TileElement(
-                  //   color: Colors.red,
-                  //   leadingIcon: Icon(
-                  //     CupertinoIcons.person,
-                  //     color: Colors.white,
-                  //   ),
-                  //   leadingText: "Delete Account",
-                  //   trailingText: null,
-                  // ),
-                ],
+                  );
+
+                  await DatabaseFunctionality().deleteAllTables();
+                  await authService.signOut();
+
+                  if (navigator.mounted) {
+                    navigator.pop(); // close Signing Out dialog
+                  }
+                },
+                color: Colors.orange,
+                leadingIcon: Icon(CupertinoIcons.power, color: Colors.white),
+                leadingText: "Sign Out",
+                trailingText: null,
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

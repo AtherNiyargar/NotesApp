@@ -1,12 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Divider;
 import 'package:notes_app/backend/database_functionality.dart';
+import 'package:notes_app/elements/show_dialogs.dart';
 
 class CreateOrEditNotePage extends StatefulWidget {
+  final int? id;
   final String? title;
   final String? content;
-  final int? id;
-  const new({super.key, this.id, this.title, this.content});
+  final String? createdAt;
+  const new({super.key, this.id, this.title, this.content, this.createdAt});
 
   @override
   State<CreateOrEditNotePage> createState() => _CreateOrEditNotePageState();
@@ -38,7 +40,6 @@ class _CreateOrEditNotePageState extends State<CreateOrEditNotePage> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-
     super.dispose();
   }
 
@@ -47,10 +48,27 @@ class _CreateOrEditNotePageState extends State<CreateOrEditNotePage> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
+        var title = _titleController.text.trim();
+        var content = _contentController.text;
 
-        final title = _titleController.text.trim();
-        final content = _contentController.text;
+        if (content.length > 50000) {
+          showDialogs(
+            context,
+            title: "Cannot save note.",
+            content: "The content of this note exceeded 30,000 characters\n(including spaces).\nThats the limit per note.",
+          );
+          return;
+        }
+        if (title.length > 100) {
+          showDialogs(
+            context,
+            title: "Cannot save note.",
+            content: "The title of this note exceeded 100 characters\n(including spaces).\nThats the limit per note.",
+          );
+          return;
+        }
+
+        if (didPop) return;
 
         if (title.isEmpty && content.isEmpty) {
           Navigator.pop(context, false);
@@ -66,49 +84,78 @@ class _CreateOrEditNotePageState extends State<CreateOrEditNotePage> {
           tempSno ?? widget.id,
           title,
           content,
+          widget.createdAt,
         );
         if (!context.mounted) return;
         Navigator.pop(context, true);
       },
       child: CupertinoPageScaffold(
-        navigationBar: CupertinoNavigationBar(
+        navigationBar: const CupertinoNavigationBar(
           automaticallyImplyLeading: false,
         ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 10, right: 10),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Flexible(
-                    flex: 0,
-                    child: CupertinoTextField(
-                      placeholder: "Title",
-                      controller: _titleController,
-                      style: TextStyle(fontSize: 32, fontWeight: .bold),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: .new(0)),
+            // 1. LayoutBuilder reads the exact height available on the screen
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    // 2. Forces the Column to be at least as tall as the viewport screen
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      // 3. Allows Expanded to work inside a scrollable Column
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Flexible(
+                            flex: 0,
+                            child: CupertinoTextField(
+                              maxLength: 100,
+                              placeholder: "Title",
+                              controller: _titleController,
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0x00000000),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Divider(
+                            color: Color.fromARGB(126, 153, 153, 153),
+                          ),
+
+                          // 4. Wrap your expanding text field in an Expanded widget
+                          Expanded(
+                            child: CupertinoTextField(
+                              maxLength: 50000,
+                              textAlignVertical: TextAlignVertical.top,
+                              placeholder: "Text",
+                              controller: _contentController,
+                              style: const TextStyle(fontSize: 18),
+                              keyboardType: TextInputType.multiline,
+                              expands: true, // This will now stretch all the way down!
+                              maxLines: null,
+                              minLines: null,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0x00000000),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  Divider(color: const Color.fromARGB(126, 153, 153, 153)),
-                  CupertinoTextField(
-                    textAlignVertical: .top,
-
-                    placeholder: "Text",
-                    controller: _contentController,
-                    style: TextStyle(fontSize: 18),
-                    keyboardType: .multiline,
-                    expands: true,
-                    maxLines: null,
-                    minLines: null,
-
-                    decoration: BoxDecoration(
-                      border: Border.all(color: .new(0)),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),

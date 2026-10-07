@@ -1,289 +1,226 @@
-import 'package:cupertino_lists_enhanced/list_section.dart';
-import 'package:cupertino_lists_enhanced/list_tile.dart';
 import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:notes_app/backend/database_functionality.dart';
+import 'package:notes_app/backend/sync_todos_service.dart';
+import 'package:notes_app/backend/todo_state_provider.dart';
+import 'package:notes_app/views/todo_task_page.dart';
+import 'package:share_plus/share_plus.dart';
 
-final List<String> completedTasks = [];
-
-final List<String> inCompletedTasks = [
-  "BGMI Rank Push",
-  "Doom Scrolling",
-  "Goon on goth mommy",
-  "Get a life",
-  "Steal hot-ass neighbour's underwear",
-  "Hate LGBTQ",
-  "Thank god for not making me israel dih sucker",
-  "Survive in office",
-  "Defend hitler on a random reddit forum",
-  "Visit basement and roleplay lord jeffery epstine 🛐",
-];
-
-class UIRefresh extends ChangeNotifier {
-  static final UIRefresh _instance = UIRefresh._internal();
-  factory UIRefresh() {
-    return _instance;
-  }
-  UIRefresh._internal();
-
-  void updateUI() {
-    notifyListeners();
-  }
-}
-
-class TodoPage extends StatelessWidget {
-  new({super.key});
-  final UIRefresh uiRefresh = UIRefresh();
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text("Todos"),
-        leading: CupertinoNavigationBarBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
-        trailing: CupertinoButton(
-          sizeStyle: .medium,
-          child: Icon(CupertinoIcons.add, size: 25),
-          onPressed: () {
-            Navigator.pushNamed(context, "/create_todo_page");
-            // showCupertinoDialog(
-            //   barrierDismissible: true,
-            //   context: context,
-            //   builder: (context) {
-            //     return CupertinoAlertDialog(
-            //       title: Text("Create Task"),
-
-            //       content: Padding(
-            //         padding: const EdgeInsets.only(top: 15),
-            //         child: CupertinoTextField(
-            //           // decoration: InputDecoration(),
-
-            //           padding: EdgeInsetsGeometry.only(top: 20),
-            //         ),
-            //       ),
-
-            //       // content: Text("You cannot undo this action"),
-            //       actions: [
-            //         CupertinoDialogAction(
-            //           isDefaultAction: true,
-
-            //           // isDestructiveAction: true,
-            //           child: Text("Cancel"),
-            //           onPressed: () => Navigator.pop(context),
-            //         ),
-
-            //         CupertinoDialogAction(
-            //           // isDefaultAction: true,
-
-            //           isDestructiveAction: true,
-            //           child: Text("Delete"),
-            //           onPressed: () => Navigator.pop(context),
-            //         ),
-            //       ],
-            //     );
-            //   },
-            // );
-          },
-        ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ListenableBuilder(
-              listenable: uiRefresh,
-              builder: (context, child) => Column(
-                children: [
-                  inCompletedTasks.isNotEmpty
-                      ? InCompletedTasks()
-                      : SizedBox.shrink(),
-                  completedTasks.isNotEmpty
-                      ? CompletedTasks()
-                      : SizedBox.shrink(),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class InCompletedTasks extends StatelessWidget {
+class TodoPage extends StatefulWidget {
   const new({super.key});
 
   @override
+  State<TodoPage> createState() => _TodoPageState();
+}
+
+class _TodoPageState extends State<TodoPage> {
+  final DatabaseFunctionality _databaseFunctionality = DatabaseFunctionality();
+
+  final TextEditingController _controller = TextEditingController();
+
+  final TodoStateProvider _stateProvider = TodoStateProvider();
+
+  @override
   Widget build(BuildContext context) {
-    return EnhancedCupertinoListSection.insetGrouped(
-      header: const Text('TODO'),
-      children: List.generate(
-        growable: false,
-        inCompletedTasks.length,
-        (index) => GestureDetector(
-          onLongPress: () {
-            // print("=========");
-            showCupertinoDialog(
-              barrierDismissible: true,
-              context: context,
-              builder: (context) {
-                return CupertinoAlertDialog(
-                  title: Text("Do you want to delete this\ntask?"),
-
-                  content: Text("You cannot undo this action"),
-                  actions: [
-                    CupertinoDialogAction(
-                      isDefaultAction: true,
-
-                      // isDestructiveAction: true,
-                      child: Text("Cancel"),
-                      onPressed: () => Navigator.pop(context),
+    final darkTheme = CupertinoTheme.brightnessOf(context) == .dark;
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            transitionBetweenRoutes: false,
+            padding: EdgeInsetsDirectional.only(top: 10),
+            bottomMode: .always,
+            bottom: PreferredSize(
+              preferredSize: Size.fromHeight(60),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: .spaceBetween,
+                  children: [
+                    Row(
+                      spacing: 10,
+                      children: [Icon(CupertinoIcons.doc), Text("Todo pages")],
                     ),
+                    GlassMenu(
+                      quality: .premium,
+                      settings: LiquidGlassSettings(blur: 10),
 
-                    CupertinoDialogAction(
-                      // isDefaultAction: true,
+                      menuHeight: MediaQuery.heightOf(context) / 5,
+                      menuWidth: MediaQuery.widthOf(context) - 20,
+                      // settings: _kMenuGlass(context),
+                      menuBorderRadius: 32,
 
-                      isDestructiveAction: true,
-                      child: Text("Delete"),
-                      onPressed: () => Navigator.pop(context),
+                      // quality: GlassQuality.premium,
+                      triggerBuilder: (context, toggleMenu) {
+                        // final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+                        return GlassButton.custom(
+                          onTap: toggleMenu,
+                          width: 44,
+                          height: 44,
+                          // settings: _kTriggerGlass(context),
+                          shape: const LiquidRoundedRectangle(borderRadius: 22),
+                          // quality: GlassQuality.premium,
+                          useOwnLayer: true,
+                          persistPressOnDrag: true,
+                          // ambientBaseLight: isDark ? 0.0 : 0.25,
+                          child: Center(child: Icon(CupertinoIcons.add)),
+                        );
+                      },
+
+                      items: [
+                        SizedBox(height: 15),
+                        Column(
+                          spacing: 0,
+                          mainAxisAlignment: .center,
+                          children: [
+                            CupertinoTextField.borderless(
+                              controller: _controller,
+                              prefix: Icon(CupertinoIcons.doc),
+                              maxLength: 50,
+                              placeholder: " Create todo page",
+                              style: TextStyle(fontSize: 32, fontWeight: .w500),
+                            ),
+                          ],
+                        ),
+                        GlassMenuItem(
+                          title: "Create",
+
+                          onTap: () async {
+                            final pageName = _controller.text.trim();
+                            if (pageName.isNotEmpty) {
+                              await _databaseFunctionality.addPage(pageName);
+                              _stateProvider.refreshList();
+                            }
+                            _controller.clear();
+                          },
+                        ),
+                      ],
                     ),
                   ],
+                ),
+              ),
+            ),
+            largeTitle: Text("Todos"),
+          ),
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              await SyncTodosService().syncNotes();
+              _stateProvider.refreshList();
+            },
+            refreshIndicatorExtent: 40,
+            refreshTriggerPullDistance: 150,
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ListenableBuilder(
+            listenable: _stateProvider,
+            builder: (context, _) => FutureBuilder<List<Map<String, Object?>>>(
+              // future: Future.delayed(Duration(seconds: 3)),
+              future: _databaseFunctionality.getAllPage(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == .done) {
+                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                    final page = snapshot.data;
+                    return SliverList.builder(
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) => Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: CupertinoContextMenu(
+                          actions: [
+                            CupertinoContextMenuAction(
+                              trailingIcon: CupertinoIcons.share,
+                              child: Text("Share"),
+                              onPressed: () async {
+                                final tasksToShare = await _databaseFunctionality
+                                    .getTasksToShare(
+                                      page![index]["page_name"] as String,
+                                    );
+                                SharePlus.instance.share(
+                                  ShareParams(
+                                    text:
+                                        "${page[index]["page_name"]}\n$tasksToShare",
+                                  ),
+                                );
+                                if (!context.mounted) return;
+                                Navigator.pop(context);
+                              },
+                            ),
+                            CupertinoContextMenuAction(
+                              trailingIcon: CupertinoIcons.delete,
+                              isDestructiveAction: true,
+                              child: Text("Delete"),
+                              onPressed: () async {
+                                await _databaseFunctionality.deletePage(
+                                  page![index]["page_name"] as String,
+                                );
+                                _stateProvider.refreshList();
+                                if (!context.mounted) return;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: darkTheme
+                                  ? CupertinoColors.black
+                                  : CupertinoColors.systemBackground,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                width: 2,
+                                color: darkTheme
+                                    ? const Color.fromARGB(255, 56, 56, 56)
+                                    : const Color.fromARGB(255, 208, 208, 212),
+                              ),
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width - 16,
+                              child: CupertinoListTile(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (context) => TodoTaskPage(
+                                        pageName:
+                                            page[index]["page_name"] as String,
+                                        // stateProvider: _stateProvider,
+                                        // databaseFunctionality:
+                                        //     _databaseFunctionality,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                title: Text(
+                                  page![index]["page_name"] as String,
+                                  softWrap: true,
+                                  maxLines: 4,
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: .w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return SliverToBoxAdapter(
+                      child: Center(child: Text("No Pages")),
+                    );
+                  }
+                }
+                return SliverToBoxAdapter(
+                  child: Center(child: CupertinoActivityIndicator()),
                 );
               },
-            );
-          },
-          child: FalseCheckBoxElement(
-            todoName: inCompletedTasks[index],
-            isCompleted: false,
-            position: index,
-          ).animate().fade(),
-        ),
-      ),
-    );
-  }
-}
-
-class CompletedTasks extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return EnhancedCupertinoListSection.insetGrouped(
-      header: const Text('Completed'),
-      children: List.generate(
-        growable: false,
-        completedTasks.length,
-        (index) => GestureDetector(
-          onLongPress: () => showCupertinoDialog(
-            barrierDismissible: true,
-            context: context,
-            builder: (context) {
-              return CupertinoAlertDialog(
-                title: Text("Do you want to delete this\ntask?"),
-
-                content: Text("You cannot undo this action"),
-                actions: [
-                  CupertinoDialogAction(
-                    isDefaultAction: true,
-
-                    // isDestructiveAction: true,
-                    child: Text("Cancel"),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-
-                  CupertinoDialogAction(
-                    // isDefaultAction: true,
-
-                    isDestructiveAction: true,
-                    child: Text("Delete"),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              );
-            },
+            ),
           ),
-          child: TrueCheckBoxElement(
-            todoName: completedTasks[index],
-            isCompleted: true,
-            position: index,
-          ).animate().fade(),
-        ),
-      ),
-    );
-  }
-}
-
-class TrueCheckBoxElement extends StatelessWidget {
-  final String todoName;
-  final bool isCompleted;
-  final int position;
-  const new({
-    super.key,
-    required this.todoName,
-    required this.isCompleted,
-    required this.position,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    UIRefresh uiRefresh = UIRefresh();
-    return EnhancedCupertinoListTile(
-      onTap: () {
-        inCompletedTasks.add(todoName);
-        completedTasks.removeAt(position);
-        uiRefresh.updateUI();
-      },
-
-      titleBuilder: (context) => Text(todoName),
-
-      leading: Transform.scale(
-        scale: 2,
-        child: CupertinoCheckbox(
-          value: isCompleted,
-          onChanged: (_) {
-            inCompletedTasks.add(todoName);
-            completedTasks.removeAt(position);
-            uiRefresh.updateUI();
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class FalseCheckBoxElement extends StatelessWidget {
-  final String todoName;
-  final bool isCompleted;
-  final int position;
-
-  const new({
-    super.key,
-    required this.todoName,
-    required this.isCompleted,
-    required this.position,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    UIRefresh uiRefresh = UIRefresh();
-    return EnhancedCupertinoListTile(
-      onTap: () {
-        completedTasks.add(todoName);
-        inCompletedTasks.removeAt(position);
-        uiRefresh.updateUI();
-      },
-      titleBuilder: (context) => Text(todoName),
-      leading: Transform.scale(
-        scale: 2,
-        child: CupertinoCheckbox(
-          value: isCompleted,
-          onChanged: (_) {
-            completedTasks.add(todoName);
-            inCompletedTasks.removeAt(position);
-            uiRefresh.updateUI();
-          },
-        ),
+          SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
       ),
     );
   }

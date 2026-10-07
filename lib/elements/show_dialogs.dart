@@ -46,6 +46,7 @@ Future showDialogs(
   String? title,
   String? content,
 }) async {
+  // print("=============");
   showCupertinoDialog(
     context: context,
     builder: (context) {
@@ -57,20 +58,9 @@ Future showDialogs(
             : null,
         actions: [
           CupertinoDialogAction(
-            // isDefaultAction: true,
-
-            // isDestructiveAction: true,
             child: Text("OK"),
             onPressed: () => Navigator.pop(context),
           ),
-
-          // CupertinoDialogAction(
-          //   // isDefaultAction: true,
-
-          //   isDestructiveAction: true,
-          //   child: Text("Delete"),
-          //   onPressed: () => Navigator.pop(context),
-          // ),
         ],
       );
     },

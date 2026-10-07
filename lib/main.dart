@@ -1,19 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:notes_app/views/account_and_settings_page.dart';
+import 'package:liquid_glass_widgets/liquid_glass_setup.dart';
 import 'package:notes_app/views/create_or_edit_note.dart';
-import 'package:notes_app/views/create_todo_page.dart';
 import 'package:notes_app/views/home_page.dart';
 import 'package:notes_app/views/login_page.dart';
 import 'package:notes_app/views/signup_page.dart';
 import 'package:notes_app/views/splash_screen.dart';
-import 'package:notes_app/views/todo_page.dart';
 import 'package:notes_app/views/welcome_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LiquidGlassWidgets.initialize(
+);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -33,8 +33,7 @@ void main() async {
   );
   runApp(
     CupertinoApp(
-      theme: CupertinoThemeData(
-      ),
+      theme: CupertinoThemeData(),
       initialRoute: "/",
       routes: {
         "/": (_) => const SplashScreen(),
@@ -43,9 +42,10 @@ void main() async {
         "/login_page": (_) => LoginPage(),
         "/home_page": (_) => HomePage(),
         "/create_note_page": (_) => CreateOrEditNotePage(),
-        "/todo_page": (_) => TodoPage(),
-        "/create_todo_page": (_) => CreateTodoPage(),
-        "/account_and_settings_page": (_) => AccountAndSettingsPage(),
+        // "/todo_page": (_) => TodoPage(scroll: ScrollController()),
+        // "/create_todo_page": (_) => CreateTodoPage(),
+        // "/account_and_settings_page": (_) =>
+        //     AccountAndSettingsPage(scroll: ScrollController()),
       },
       debugShowCheckedModeBanner: false,
     ),

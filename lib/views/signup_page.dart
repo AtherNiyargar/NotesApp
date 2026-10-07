@@ -1,12 +1,16 @@
+import 'dart:io' show SocketException;
+
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart'
+    show InternetConnection;
 import 'package:notes_app/Exceptions/custom_exception.dart';
 import 'package:notes_app/backend/auh_service.dart';
 import 'package:notes_app/elements/captcha_verify_dialog.dart';
 import 'package:notes_app/elements/show_dialogs.dart';
 import 'package:notes_app/views/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
-    show AuthRetryableFetchException;
+    show AuthRetryableFetchException, AuthWeakPasswordException;
 
 class SignupPage extends StatefulWidget {
   const new({super.key});
@@ -58,6 +62,14 @@ class _SignupPageState extends State<SignupPage> {
         return;
       }
 
+      final result = await InternetConnection().hasInternetAccess;
+
+      if (!result) {
+        throw SocketException("Please check your internet");
+      }
+
+      if (!context.mounted) return;
+
       final captcha = await showCaptcha(context);
       if (captcha == null) return;
 
@@ -65,6 +77,20 @@ class _SignupPageState extends State<SignupPage> {
 
       if (!context.mounted) return;
       await showOtpDialog(context, email);
+    } on AuthWeakPasswordException {
+      if (!context.mounted) return;
+      await showDialogs(
+        context,
+        title: "Password is weak",
+        content: "Password must be greater than 8 characters, and contain uppercase and lowercase letter, numbers and special symbols.",
+      );
+    } on SocketException {
+      if (!context.mounted) return;
+      await showDialogs(
+        context,
+        title: "Unable to login",
+        content: "Please check your internet connection.",
+      );
     } on InvalidEmailException {
       if (!context.mounted) return;
       await showDialogs(
@@ -207,11 +233,6 @@ class _SignupPageState extends State<SignupPage> {
                                         return LoginPage();
                                       },
                                 );
-                                // Navigator.of(context).pop(
-                                // CupertinoPageRoute(
-                                //   builder: (context) => SignupPage(),
-                                // ),
-                                // );
                               },
                         child: Text(
                           "Log in here",

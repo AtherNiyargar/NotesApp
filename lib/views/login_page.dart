@@ -1,5 +1,8 @@
+import 'dart:io' show SocketException;
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart'
+    show InternetConnection;
 import 'package:notes_app/Exceptions/custom_exception.dart';
 import 'package:notes_app/backend/auh_service.dart';
 import 'package:notes_app/elements/captcha_verify_dialog.dart';
@@ -43,6 +46,13 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      final result = await InternetConnection().hasInternetAccess;
+
+      if (!result) {
+        throw SocketException("Please check your internet");
+      }
+
+      if (!context.mounted) return;
       final captcha = await showCaptcha(context);
       if (captcha == null) return;
 
@@ -54,6 +64,13 @@ class _LoginPageState extends State<LoginPage> {
     } on InvalidEmailException {
       if (!context.mounted) return;
       await showDialogs(context, title: "Please enter a valid Gmail address");
+    } on SocketException {
+      if (!context.mounted) return;
+      await showDialogs(
+        context,
+        title: "Unable to login",
+        content: "Please check your internet connection.",
+      );
     } on AuthRetryableFetchException {
       if (!context.mounted) return;
       await showDialogs(
