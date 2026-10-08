@@ -47,8 +47,8 @@ const String todoFolderCreate =
     '''
   CREATE TABLE $_todoPageTable (
     $_pageNameColumn TEXT NOT NULL UNIQUE,
-    $_toUploadColumn BOOL NOT NULL DEFAULT TRUE,
-    $_toDeleteColumn BOOL NOT NULL DEFAULT FALSE
+    $_toUploadColumn BOOL NOT NULL DEFAULT 1,
+    $_toDeleteColumn BOOL NOT NULL DEFAULT 0
   );
 ''';
 
@@ -58,8 +58,8 @@ const String todoCreateQuery =
     $_createdAt TEXT NOT NULL UNIQUE,
     $_taskColumn TEXT NOT NULL,
     $_isCompletedColumn BOOL NOT NULL DEFAULT 0,
-    $_toUploadColumn BOOL NOT NULL DEFAULT TRUE,
-    $_toDeleteColumn BOOL NOT NULL DEFAULT FALSE,
+    $_toUploadColumn BOOL NOT NULL DEFAULT 1,
+    $_toDeleteColumn BOOL NOT NULL DEFAULT 0,
     $_belongToColumn TEXT NOT NULL,
     FOREIGN KEY ($_belongToColumn) REFERENCES $_todoPageTable ($_pageNameColumn) 
       ON DELETE CASCADE 
@@ -246,6 +246,7 @@ class DatabaseService {
 
   Future addTodoPage(String folderName) async {
     Database db = await getDb();
+    print("========== $folderName");
     // Can throw DatabaseException if folder name aleady exists.
     await db.insert(_todoPageTable, {_pageNameColumn: folderName});
   }

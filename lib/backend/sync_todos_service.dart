@@ -37,6 +37,7 @@ class SyncTodosService {
 
   Future _uploadToServer() async {
     final pagesToUpload = await databaseFunctionality!.getPagesToUpload();
+    print(pagesToUpload);
     try {
       await client!.from("todo_pages").upsert(pagesToUpload);
     } catch (_) {}
