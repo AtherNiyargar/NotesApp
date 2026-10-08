@@ -4,9 +4,9 @@ import 'package:notes_app/views/todo_task_page.dart';
 
 class CreateTask extends StatefulWidget {
   final TaskStateProvider _taskStateProvider;
-  final String page;
+  final String pageUid;
 
-  const new({super.key, required this._taskStateProvider, required this.page});
+  const new({super.key, required this._taskStateProvider, required this.pageUid});
 
   @override
   State<CreateTask> createState() => _CreateTaskState();
@@ -46,7 +46,7 @@ class _CreateTaskState extends State<CreateTask> {
                   if (_controller.text.trim().isEmpty) return;
                   await widget._taskStateProvider.addTask(
                     _controller.text.trim(),
-                    widget.page,
+                    widget.pageUid,
                   );
                   if (!context.mounted) return;
                   Navigator.pop(context);

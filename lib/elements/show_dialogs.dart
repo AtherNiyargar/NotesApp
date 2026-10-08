@@ -46,7 +46,6 @@ Future showDialogs(
   String? title,
   String? content,
 }) async {
-  // print("=============");
   showCupertinoDialog(
     context: context,
     builder: (context) {

@@ -3,6 +3,7 @@ import 'dart:io' show Directory;
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 
 class UnableToInsertOrUpdateException implements Exception {}
 
@@ -27,6 +28,7 @@ const String _pinned = "pinned";
 
 const String _todoPageTable = "todo_pages";
 const String _pageNameColumn = "page_name";
+const String _pageUniqueId = "unique_id";
 
 const String _todoTable = "todo_table";
 const String _taskColumn = "task";
@@ -35,34 +37,36 @@ const String _belongToColumn = "belong_to";
 const String _toUploadColumn = "to_upload";
 const String _toDeleteColumn = "to_delete";
 const String _toDeletePageTable = "to_delete_page";
+const String _taskUniqueId = "task_id";
 
 const String toDeletePageCreate =
     '''
   CREATE TABLE $_toDeletePageTable (
-    $_pageNameColumn TEXT NOT NULL UNIQUE
+    $_pageUniqueId TEXT NOT NULL UNIQUE
   );
 ''';
 
 const String todoFolderCreate =
     '''
   CREATE TABLE $_todoPageTable (
-    $_pageNameColumn TEXT NOT NULL UNIQUE,
+    $_pageNameColumn TEXT NOT NULL,
     $_toUploadColumn BOOL NOT NULL DEFAULT 1,
-    $_toDeleteColumn BOOL NOT NULL DEFAULT 0
+    $_toDeleteColumn BOOL NOT NULL DEFAULT 0,
+    $_pageUniqueId TEXT NOT NULL UNIQUE
   );
 ''';
 
 const String todoCreateQuery =
     '''
   CREATE TABLE $_todoTable (
-    $_createdAt TEXT NOT NULL UNIQUE,
     $_taskColumn TEXT NOT NULL,
     $_isCompletedColumn BOOL NOT NULL DEFAULT 0,
     $_toUploadColumn BOOL NOT NULL DEFAULT 1,
     $_toDeleteColumn BOOL NOT NULL DEFAULT 0,
+    $_taskUniqueId TEXT NOT NULL UNIQUE,
     $_belongToColumn TEXT NOT NULL,
-    FOREIGN KEY ($_belongToColumn) REFERENCES $_todoPageTable ($_pageNameColumn) 
-      ON DELETE CASCADE 
+    FOREIGN KEY ($_belongToColumn) REFERENCES $_todoPageTable ($_pageUniqueId)
+      ON DELETE CASCADE
       ON UPDATE CASCADE
   );
 ''';
@@ -130,8 +134,8 @@ class DatabaseService {
         await db.execute(createToDeleteTable);
 
         await db.execute(todoFolderCreate);
-        await db.execute(todoCreateQuery);
         await db.execute(toDeletePageCreate);
+        await db.execute(todoCreateQuery);
       },
     );
   }
@@ -140,11 +144,73 @@ class DatabaseService {
     return _db ??= await openDb();
   }
 
-  Future deleteAllPagesAndHenceAllTasks() async {
+  Future addTodoPage(String folderName, String uid) async {
+    Database db = await getDb();
+    // Can throw DatabaseException if folder name aleady exists.
+    await db.insert(_todoPageTable, {
+      _pageNameColumn: folderName,
+      _pageUniqueId: uid,
+    });
+  }
+
+  Future<List<Map<String, Object?>>> getAllTodoPage() async {
+    Database db = await getDb();
+    return await db.query(
+      _todoPageTable,
+      where: "$_toDeleteColumn = ?",
+      whereArgs: [0],
+    );
+  }
+
+  // :I THINK ITS DONE
+  Future updatePageName(String oldName, String newName, String uid) async {
+    Database db = await getDb();
+    final result = await db.update(
+      _todoPageTable,
+      {_pageNameColumn: newName, _toUploadColumn: 1},
+      where: "$_pageUniqueId = ?",
+      whereArgs: [uid],
+    );
+    if (result == 0) {
+      throw UnableToUpdateFolderException();
+    }
+  }
+
+  Future deletePage(String uid) async {
     Database db = await getDb();
 
-    await db.delete(_todoPageTable);
+    await db.insert(_toDeletePageTable, {
+      _pageUniqueId: uid,
+    }, conflictAlgorithm: .ignore);
+
+    await db.delete(
+      _todoPageTable,
+      where: "$_pageUniqueId = ?",
+      whereArgs: [uid],
+    );
   }
+
+  Future getPagesToUpload() async {
+    Database db = await getDb();
+    return await db.query(
+      _todoPageTable,
+      columns: [_pageNameColumn, _pageUniqueId],
+      where: "$_toUploadColumn = ? AND $_toDeleteColumn = ?",
+      whereArgs: [1, 0],
+    );
+  }
+
+  Future<List<Map<String, Object?>>> getPagesToDelete() async {
+    Database db = await getDb();
+    return await db.query(_toDeletePageTable);
+  }
+
+  Future deleteAllPagesAndHenceAllTasks() async {
+    Database db = await getDb();
+    await db.delete(_todoPageTable);
+    await db.delete(_toDeletePageTable);
+  }
+
 
   Future nukePageTableWithData(List<Map<String, Object?>> data) async {
     Database db = await getDb();
@@ -172,65 +238,72 @@ class DatabaseService {
       _todoTable,
       where: "$_toDeleteColumn = ? AND $_toUploadColumn = ?",
       whereArgs: [0, 1],
-      columns: [_createdAt, _taskColumn, _isCompletedColumn, _belongToColumn],
+      columns: [_taskUniqueId, _taskColumn, _isCompletedColumn, _belongToColumn],
     );
   }
 
-  Future getPagesToDelete() async {
-    Database db = await getDb();
-    return await db.query(_toDeletePageTable);
-  }
-
-  Future getPagesToUpload() async {
-    Database db = await getDb();
-    return await db.query(
-      _todoPageTable,
-      columns: [_pageNameColumn],
-      where: "$_toUploadColumn = ? AND $_toDeleteColumn = ?",
-      whereArgs: [1, 0],
-    );
-  }
-
-  Future deletePage(String pageName) async {
-    Database db = await getDb();
-    await db.insert(_toDeletePageTable, {
-      _pageNameColumn: pageName,
-    }, conflictAlgorithm: .ignore);
-    await db.delete(
-      _todoPageTable,
-      where: "$_pageNameColumn = ?",
-      whereArgs: [pageName],
-    );
-  }
-
-  Future<List<Map<String, Object?>>> fetchCompletedTask(String page) async {
-    Database db = await getDb();
-    return await db.query(
-      _todoTable,
-      // columns: [_taskColumn, _isCompletedColumn],
-      where:
-          "$_belongToColumn = ? AND $_isCompletedColumn = ? AND $_toDeleteColumn = ?",
-      whereArgs: [page, 1, 0],
-    );
-  }
-
-  Future<List<Map<String, Object?>>> fetchIncompletedTask(String page) async {
+  Future<List<Map<String, Object?>>> fetchCompletedTask(String pageUid) async {
     Database db = await getDb();
     return await db.query(
       _todoTable,
       where:
           "$_belongToColumn = ? AND $_isCompletedColumn = ? AND $_toDeleteColumn = ?",
-      whereArgs: [page, 0, 0],
+      whereArgs: [pageUid, 1, 0],
     );
   }
 
-  Future deleteTask(String createdAt) async {
+  Future<List<Map<String, Object?>>> fetchIncompletedTask(
+    String pageUid,
+  ) async {
+    Database db = await getDb();
+    return await db.query(
+      _todoTable,
+      where:
+          "$_belongToColumn = ? AND $_isCompletedColumn = ? AND $_toDeleteColumn = ?",
+      whereArgs: [pageUid, 0, 0],
+    );
+  }
+
+  
+
+  Future addTask(String task, String pageUid) async {
+    Database db = await getDb();
+
+    await db.insert(_todoTable, {
+      _taskUniqueId: Uuid().v4(),
+      _taskColumn: task,
+      _isCompletedColumn: 0,
+      _belongToColumn: pageUid,
+    });
+  }
+
+  Future deleteTask(String taskId) async {
     Database db = await getDb();
     await db.update(
       _todoTable,
       {_toDeleteColumn: 1},
-      where: "$_createdAt = ?",
-      whereArgs: [createdAt],
+      where: "$_taskUniqueId = ?",
+      whereArgs: [taskId],
+    );
+  }
+
+  Future editTask(String newTaskName, String taskId) async {
+    Database db = await getDb();
+    await db.update(
+      _todoTable,
+      {_taskColumn: newTaskName, _toUploadColumn: 1},
+      where: "$_taskUniqueId = ?",
+      whereArgs: [taskId],
+    );
+  }
+
+  Future updateTask(String taskId, bool check) async {
+    Database db = await getDb();
+    await db.update(
+      _todoTable,
+      {_isCompletedColumn: check ? 1 : 0, _toUploadColumn: 1},
+      where: "$_taskUniqueId = ?",
+      whereArgs: [taskId],
     );
   }
 
@@ -238,36 +311,9 @@ class DatabaseService {
     Database db = await getDb();
     return await db.query(
       _todoTable,
-      columns: [_createdAt],
+      columns: [_taskUniqueId],
       where: "$_toDeleteColumn = ?",
       whereArgs: [1],
-    );
-  }
-
-  Future addTodoPage(String folderName) async {
-    Database db = await getDb();
-    print("========== $folderName");
-    // Can throw DatabaseException if folder name aleady exists.
-    await db.insert(_todoPageTable, {_pageNameColumn: folderName});
-  }
-
-  Future editTask(String newTaskName, String createdAt) async {
-    Database db = await getDb();
-    await db.update(
-      _todoTable,
-      {_taskColumn: newTaskName, _toUploadColumn: 1},
-      where: "$_createdAt = ?",
-      whereArgs: [createdAt],
-    );
-  }
-
-  Future updateTask(String createdAt, bool check) async {
-    Database db = await getDb();
-    await db.update(
-      _todoTable,
-      {_isCompletedColumn: check ? 1 : 0, _toUploadColumn: 1},
-      where: "$_createdAt = ?",
-      whereArgs: [createdAt],
     );
   }
 
@@ -282,63 +328,6 @@ class DatabaseService {
     await db.delete(toUploadTable);
   }
 
-  Future addTask(String task, String folderName) async {
-    Database db = await getDb();
-    final currentTime = DateTime.now().toUtc().toIso8601String();
-    await db.insert(_todoTable, {
-      _taskColumn: task,
-      _createdAt: currentTime,
-      _belongToColumn: folderName,
-    });
-  }
-
-  Future updateTaskName(
-    String createdAt,
-    String newName,
-    String folderName,
-  ) async {
-    Database db = await getDb();
-    final result = await db.update(
-      _todoTable,
-      {_taskColumn: newName, _toUploadColumn: 1},
-      where: "$_createdAt = ?",
-      whereArgs: [createdAt],
-    );
-    if (result == 0) {
-      throw UnableToUpdateTaskException();
-    }
-  }
-
-  Future updatePageName(String oldName, String newName) async {
-    Database db = await getDb();
-    final result = await db.update(
-      _todoPageTable,
-      {_pageNameColumn: newName, _toUploadColumn: 1},
-      where: "$_pageNameColumn = ?",
-      whereArgs: [oldName],
-    );
-
-    if (result == 0) {
-      throw UnableToUpdateFolderException();
-    }
-
-    // await db.update(
-    //   _todoTable,
-    //   {_pageNameColumn: newName},
-    //   where: "$_pageNameColumn = ?",
-    //   whereArgs: [oldName],
-    // );
-  }
-
-  Future<List<Map<String, Object?>>> getAllTodoPage() async {
-    Database db = await getDb();
-    return await db.query(
-      _todoPageTable,
-      where: "$_toDeleteColumn = ?",
-      whereArgs: [0],
-    );
-  }
-
   /* // This function is not used anywhere
 
   Future getAllTasks(String page) async {
@@ -350,23 +339,23 @@ class DatabaseService {
     );
   }*/
 
-  Future<String> getTasksToShare(String page) async {
-    Database db = await getDb();
-    final buffer = StringBuffer();
-    final tasks = await db.query(
-      _todoTable,
-      columns: [_isCompletedColumn, _taskColumn],
-      where: "$_belongToColumn = ? AND $_toDeleteColumn = ?",
-      whereArgs: [page, 0],
-    );
+  // Future<String> getTasksToShare(String page) async {
+  //   Database db = await getDb();
+  //   final buffer = StringBuffer();
+  //   final tasks = await db.query(
+  //     _todoTable,
+  //     columns: [_isCompletedColumn, _taskColumn],
+  //     where: "$_belongToColumn = ? AND $_toDeleteColumn = ?",
+  //     whereArgs: [page, 0],
+  //   );
 
-    for (var row in tasks) {
-      buffer.write(
-        "\n${row[_isCompletedColumn] == 1 ? "✅" : "❌"} ${row[_taskColumn]}",
-      );
-    }
-    return buffer.toString();
-  }
+  //   for (var row in tasks) {
+  //     buffer.write(
+  //       "\n${row[_isCompletedColumn] == 1 ? "✅" : "❌"} ${row[_taskColumn]}",
+  //     );
+  //   }
+  //   return buffer.toString();
+  // }
 
   Future<int?> insertOrUpdateNote(
     int? sn,

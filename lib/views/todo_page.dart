@@ -4,7 +4,8 @@ import 'package:notes_app/backend/database_functionality.dart';
 import 'package:notes_app/backend/sync_todos_service.dart';
 import 'package:notes_app/backend/todo_state_provider.dart';
 import 'package:notes_app/views/todo_task_page.dart';
-import 'package:share_plus/share_plus.dart';
+
+// import 'package:share_plus/share_plus.dart';
 
 class TodoPage extends StatefulWidget {
   const new({super.key});
@@ -104,7 +105,7 @@ class _TodoPageState extends State<TodoPage> {
           ),
           CupertinoSliverRefreshControl(
             onRefresh: () async {
-              await SyncTodosService().syncNotes();
+              await SyncTodosService().syncTodos(context);
               _stateProvider.refreshList();
             },
             refreshIndicatorExtent: 40,
@@ -130,16 +131,16 @@ class _TodoPageState extends State<TodoPage> {
                               trailingIcon: CupertinoIcons.share,
                               child: Text("Share"),
                               onPressed: () async {
-                                final tasksToShare = await _databaseFunctionality
-                                    .getTasksToShare(
-                                      page![index]["page_name"] as String,
-                                    );
-                                SharePlus.instance.share(
-                                  ShareParams(
-                                    text:
-                                        "${page[index]["page_name"]}\n$tasksToShare",
-                                  ),
-                                );
+                                // final tasksToShare = await _databaseFunctionality
+                                //     .getTasksToShare(
+                                //       page![index]["page_name"] as String,
+                                //     );
+                                // SharePlus.instance.share(
+                                //   ShareParams(
+                                //     text:
+                                //         "${page[index]["page_name"]}\n$tasksToShare",
+                                //   ),
+                                // );
                                 if (!context.mounted) return;
                                 Navigator.pop(context);
                               },
@@ -150,7 +151,7 @@ class _TodoPageState extends State<TodoPage> {
                               child: Text("Delete"),
                               onPressed: () async {
                                 await _databaseFunctionality.deletePage(
-                                  page![index]["page_name"] as String,
+                                  page![index]["unique_id"] as String,
                                 );
                                 _stateProvider.refreshList();
                                 if (!context.mounted) return;
@@ -181,6 +182,7 @@ class _TodoPageState extends State<TodoPage> {
                                       builder: (context) => TodoTaskPage(
                                         pageName:
                                             page[index]["page_name"] as String,
+                                        pageId: page[index]["unique_id"] as String,
                                         // stateProvider: _stateProvider,
                                         // databaseFunctionality:
                                         //     _databaseFunctionality,

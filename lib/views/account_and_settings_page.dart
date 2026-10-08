@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:material_ui/material_ui.dart' show Colors;
 import 'package:notes_app/backend/auh_service.dart';
 import 'package:notes_app/backend/database_functionality.dart';
+import 'package:notes_app/backend/sync_todos_service.dart';
 
 class AccountAndSettingsPage extends StatelessWidget {
   new({super.key});
@@ -51,6 +52,18 @@ class AccountAndSettingsPage extends StatelessWidget {
                 color: Colors.orange,
                 leadingIcon: Icon(CupertinoIcons.power, color: Colors.white),
                 leadingText: "Sign Out",
+                trailingText: null,
+              ),
+
+
+              
+              TileElement(
+                onTap: () async {
+                  await SyncTodosService().refresAppDataFromServer();
+                },
+                color: CupertinoColors.activeGreen,
+                leadingIcon: Icon(CupertinoIcons.cloud_download, color: Colors.white),
+                leadingText: "Refresh content from server",
                 trailingText: null,
               ),
             ],

@@ -16,38 +16,40 @@ class TaskStateProvider extends ChangeNotifier {
   List<Map<String, Object?>> get completedTask => _completedTask;
   List<Map<String, Object?>> get incompletedTask => _incompletedTask;
 
-  Future<void> populateTasks(String page) async {
-    _completedTask = await _databaseFunctionality.fetchCompletedTask(page);
-    _incompletedTask = await _databaseFunctionality.fetchIncompletedTask(page);
+  Future<void> populateTasks(String pageUid) async {
+    _completedTask = await _databaseFunctionality.fetchCompletedTask(pageUid);
+    _incompletedTask = await _databaseFunctionality.fetchIncompletedTask(
+      pageUid,
+    );
     notifyListeners();
   }
 
-  Future editTask(String newTaskName, String createdAt, String page) async {
-    await _databaseFunctionality.editTask(newTaskName, createdAt);
-    await populateTasks(page);
+  Future editTask(String pageId, String newTaskName, String taskId) async {
+    await _databaseFunctionality.editTask(newTaskName, taskId);
+    await populateTasks(pageId);
   }
 
-  Future<void> updateTask(String createdAt, bool check, String page) async {
-    await _databaseFunctionality.updateTask(createdAt, check);
-    await populateTasks(page);
+  Future<void> updateTask(String taskId, bool check, String pageId) async {
+    await _databaseFunctionality.updateTask(taskId, check);
+    await populateTasks(pageId);
   }
 
-  Future<void> addTask(String task, String folderName) async {
-    await _databaseFunctionality.addTask(task, folderName);
-    await populateTasks(folderName);
+  Future<void> addTask(String task, String pageUid) async {
+    await _databaseFunctionality.addTask(task, pageUid);
+    await populateTasks(pageUid);
   }
 
-  Future<void> deleteTask(String createdAt, String page) async {
-    // Add corresponding call to your DatabaseFunctionality
-    await _databaseFunctionality.deleteATask(createdAt);
-    await populateTasks(page);
+  Future<void> deleteTask(String taskId, String pageId) async {
+    await _databaseFunctionality.deleteATask(taskId);
+    await populateTasks(pageId);
   }
 }
 
 class TodoTaskPage extends StatefulWidget {
+  final String pageId;
   final String pageName;
 
-  const TodoTaskPage({super.key, required this.pageName});
+  const TodoTaskPage({super.key, required this.pageName, required this.pageId});
 
   @override
   State<TodoTaskPage> createState() => _TodoTaskPageState();
@@ -63,7 +65,7 @@ class _TodoTaskPageState extends State<TodoTaskPage> {
     _taskStateProvider = TaskStateProvider();
     _editTaskController = TextEditingController();
     // Fetch initial data once on mount
-    _taskStateProvider.populateTasks(widget.pageName);
+    _taskStateProvider.populateTasks(widget.pageId);
   }
 
   @override
@@ -104,12 +106,12 @@ class _TodoTaskPageState extends State<TodoTaskPage> {
                         CupertinoPageRoute(
                           builder: (context) => CreateTask(
                             taskStateProvider: _taskStateProvider,
-                            page: widget.pageName,
+                            pageUid: widget.pageId,
                           ),
                         ),
                       );
                       // Refresh upon returning in case new task was added
-                      _taskStateProvider.populateTasks(widget.pageName);
+                      // _taskStateProvider.populateTasks(widget.pageName);
                     },
                   ),
                 ),
@@ -145,6 +147,7 @@ class _TodoTaskPageState extends State<TodoTaskPage> {
               child: TaskListSection(
                 taskStateProvider: _taskStateProvider,
                 pageName: widget.pageName,
+                pageId: widget.pageId,
                 editingController: _editTaskController,
               ),
             ),
@@ -158,19 +161,22 @@ class _TodoTaskPageState extends State<TodoTaskPage> {
 class TaskListSection extends StatelessWidget {
   final TaskStateProvider taskStateProvider;
   final String pageName;
+  final String pageId;
   final TextEditingController _editingController;
 
   const TaskListSection({
     super.key,
     required this.taskStateProvider,
     required this.pageName,
+    required this.pageId,
     required this._editingController,
   });
 
   void _showDeleteDialog(
     BuildContext context,
-    String createdAt,
-    String task,
+    String taskId,
+    String taskName,
+    String pageId,
     bool isCompleted,
   ) {
     showCupertinoDialog(
@@ -179,14 +185,14 @@ class TaskListSection extends StatelessWidget {
       builder: (context) {
         return CupertinoAlertDialog(
           title: Text("Task"),
-          content: Text(task),
+          content: Text(taskName),
           actions: [
             CupertinoContextMenuAction(
               isDefaultAction: true,
               trailingIcon: CupertinoIcons.create,
               child: const Text("Edit"),
               onPressed: () async {
-                _editingController.text = task;
+                _editingController.text = taskName;
                 await showCupertinoDialog(
                   barrierDismissible: true,
                   context: context,
@@ -217,16 +223,16 @@ class TaskListSection extends StatelessWidget {
                           ),
                           onPressed: () async {
                             final text = _editingController.text.trim();
-                            if (text == task) {
+                            if (text == taskName) {
                               Navigator.pop(context);
                               Navigator.pop(context);
                               return;
                             }
                             if (text.isNotEmpty) {
                               await taskStateProvider.editTask(
+                                pageId,
                                 text,
-                                createdAt,
-                                pageName,
+                                taskId,
                               );
                               _editingController.clear();
                               if (!context.mounted) return;
@@ -248,7 +254,7 @@ class TaskListSection extends StatelessWidget {
               child: const Text("Share"),
               onPressed: () {
                 SharePlus.instance.share(
-                  ShareParams(text: "${isCompleted ? "✅" : "❌"} $task"),
+                  ShareParams(text: "${isCompleted ? "✅" : "❌"} $taskName"),
                 );
                 Navigator.pop(context);
               },
@@ -262,7 +268,7 @@ class TaskListSection extends StatelessWidget {
                   context: context,
                   builder: (context) => CupertinoAlertDialog(
                     title: Text("Are you sure you want to delete this task?"),
-                    content: Text(task),
+                    content: Text(taskName),
                     actions: [
                       CupertinoDialogAction(
                         isDefaultAction: true,
@@ -277,8 +283,8 @@ class TaskListSection extends StatelessWidget {
                         child: Text("Delete"),
                         onPressed: () async {
                           await taskStateProvider.deleteTask(
-                            createdAt,
-                            pageName,
+                            taskId,
+                            pageId,
                           );
                           if (!context.mounted) return;
                           Navigator.pop(context);
@@ -313,21 +319,22 @@ class TaskListSection extends StatelessWidget {
                   index,
                 ) {
                   final task = incompleted[index];
-                  final createdAt = task["created_at"] as String;
+                  final taskId = task["task_id"] as String;
                   final taskTitle = task["task"] as String;
                   return GestureDetector(
                     onLongPress: () => _showDeleteDialog(
                       context,
-                      createdAt,
-                      task["task"] as String,
+                      taskId,
+                      taskTitle,
+                      pageId,
                       false,
                     ),
                     child: EnhancedCupertinoListTile(
                       onTap: () async {
                         await taskStateProvider.updateTask(
-                          createdAt,
+                          taskId,
                           true,
-                          pageName,
+                          pageId,
                         );
                       },
                       titleBuilder: (context) => Text(taskTitle),
@@ -337,9 +344,9 @@ class TaskListSection extends StatelessWidget {
                           value: false,
                           onChanged: (_) async {
                             await taskStateProvider.updateTask(
-                              createdAt,
+                              taskId,
                               true,
-                              pageName,
+                              pageId,
                             );
                           },
                         ),
@@ -357,21 +364,22 @@ class TaskListSection extends StatelessWidget {
                     index,
                   ) {
                     final task = completed[index];
-                    final createdAt = task["created_at"] as String;
+                    final taskId = task["task_id"] as String;
                     final taskTitle = task["task"] as String;
                     return GestureDetector(
                       onLongPress: () => _showDeleteDialog(
                         context,
-                        createdAt,
-                        task["task"] as String,
+                        taskId,
+                        taskTitle,
+                        pageId,
                         true,
                       ),
                       child: EnhancedCupertinoListTile(
                         onTap: () async {
                           await taskStateProvider.updateTask(
-                            createdAt,
+                            taskId,
                             false,
-                            pageName,
+                            pageId,
                           );
                         },
                         titleBuilder: (context) => Text(taskTitle),
@@ -381,9 +389,9 @@ class TaskListSection extends StatelessWidget {
                             value: true,
                             onChanged: (_) async {
                               await taskStateProvider.updateTask(
-                                createdAt,
+                                taskId,
                                 false,
-                                pageName,
+                                pageId,
                               );
                             },
                           ),

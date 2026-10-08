@@ -33,6 +33,7 @@ dependencies:
   flutter_native_splash: ^2.4.8
   flutter_launcher_icons: ^0.14.4
   liquid_glass_widgets: ^1.8.1
+  uuid: ^4.6.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

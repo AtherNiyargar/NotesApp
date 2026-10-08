@@ -68,7 +68,7 @@ class _CreateTodoPagePageState extends State<CreateTodoPagePage> {
                   await showDialogs(
                     context,
                     title: "Unable to add folder",
-                    content: "The folder with this name may already exist.${e}",
+                    content: "The folder with this name may already exist.$e",
                   );
                 }
               },

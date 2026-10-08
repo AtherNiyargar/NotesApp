@@ -69,7 +69,7 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Future<void> _initApp() async {
-    await SyncNotesService().syncNotes();
+    await SyncNotesService().syncNotes(context);
     await _databaseFunctionality.populateNotes();
     _sharedPreferences ??= await SharedPreferences.getInstance();
     sortBy = _sharedPreferences!.getString("sortBy") ?? "created_at_asc";
@@ -108,7 +108,7 @@ class _NotesPageState extends State<NotesPage> {
               refreshIndicatorExtent: 40,
               refreshTriggerPullDistance: 150,
               onRefresh: () async {
-                await SyncNotesService().syncNotes();
+                await SyncNotesService().syncNotes(context);
                 loadApp = fetchDbNotesAndSortAndRefresh;
                 _searchController.clear();
                 setState(() {});

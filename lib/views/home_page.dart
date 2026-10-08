@@ -13,16 +13,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // final _minimize = GlassTabBarMinimizeController(
-    
-  //   behavior: GlassBarMinimizeBehavior.never,
-  // );
-
-  late final List<Widget> _screen;
+  late final List<Widget> _screens;
 
   @override
   void initState() {
-    _screen = [
+    _screens = [
       NotesPage(),
       TodoPage(),
       AccountAndSettingsPage(),
@@ -36,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  int _selectedIndex = 1;
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +64,7 @@ class _HomePageState extends State<HomePage> {
           GlassTab(icon: Icon(CupertinoIcons.settings), label: 'Settings'),
         ],
       ),
-      body: IndexedStack(index: _selectedIndex, children: _screen),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       // body: _screen[_selectedIndex],
     );
   }

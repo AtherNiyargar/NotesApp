@@ -2,14 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:notes_app/backend/database_service.dart';
 import 'package:notes_app/backend/variables/notes.dart';
 import 'package:notes_app/elements/show_dialogs.dart';
+import 'package:uuid/uuid.dart';
 
 class DatabaseFunctionality {
   late final DatabaseService _databaseService;
+  late final Uuid uuid;
 
   DatabaseFunctionality() {
+    uuid = const Uuid();
     _databaseService = DatabaseService();
   }
-
   Future getNotesToUpload() async {
     return await _databaseService.getToUploadNotes();
   }
@@ -18,12 +20,14 @@ class DatabaseFunctionality {
     await _databaseService.nukeToUploadNotes();
   }
 
+  /*
   Future nukeDatabaseTables() async {
     await _databaseService.nukeToUploadNotes();
     await _databaseService.nukeToDeleteTable();
     await _databaseService.deleteAllNotes();
   }
 
+*/
   Future insertOrUpdateNote(
     BuildContext context,
     int? id,
@@ -43,16 +47,12 @@ class DatabaseFunctionality {
     }
   }
 
-  Future deletePage(String pageName) async {
-    await _databaseService.deletePage(pageName);
-  }
-
-  Future deleteATask(String createdAt) async {
-    await _databaseService.deleteTask(createdAt);
+  Future deletePage(String uid) async {
+    await _databaseService.deletePage(uid);
   }
 
   Future addPage(String folderName) async {
-    await _databaseService.addTodoPage(folderName);
+    await _databaseService.addTodoPage(folderName, uuid.v4());
   }
 
   Future getAllToDeleteTasks() async {
@@ -63,24 +63,30 @@ class DatabaseFunctionality {
     return await _databaseService.getAllTodoPage();
   }
 
-  Future addTask(String task, String folderName) async {
-    await _databaseService.addTask(task, folderName);
+  Future addTask(String task, String pageUid) async {
+    await _databaseService.addTask(task, pageUid);
+  }
+
+  Future deleteATask(String taskId) async {
+    await _databaseService.deleteTask(taskId);
   }
 
   Future getPagesToUpload() async {
     return await _databaseService.getPagesToUpload();
   }
 
-  Future getPagesToDelete() async {
+  Future<List<Map<String, Object?>>> getPagesToDelete() async {
     return _databaseService.getPagesToDelete();
   }
 
-  Future<List<Map<String, Object?>>> fetchCompletedTask(String page) async {
-    return _databaseService.fetchCompletedTask(page);
+  Future<List<Map<String, Object?>>> fetchCompletedTask(String pageUid) async {
+    return _databaseService.fetchCompletedTask(pageUid);
   }
 
-  Future<List<Map<String, Object?>>> fetchIncompletedTask(String page) async {
-    return _databaseService.fetchIncompletedTask(page);
+  Future<List<Map<String, Object?>>> fetchIncompletedTask(
+    String pageUid,
+  ) async {
+    return _databaseService.fetchIncompletedTask(pageUid);
   }
 
   Future getTasksToUpload() async {
@@ -91,39 +97,40 @@ class DatabaseFunctionality {
     await _databaseService.deleteAllTables();
   }
 
-  Future updateTaskName(
-    BuildContext context,
-    String oldName,
-    String newName,
-    String folderName,
-  ) async {
-    try {
-      await _databaseService.updateTaskName(oldName, newName, folderName);
-    } catch (_) {
-      if (!context.mounted) return;
-      showDialogs(
-        context,
-        title: "Something went wrong",
-        content: "Unable to update task.",
-      );
-    }
+  // Future updateTaskName(
+  //   BuildContext context,
+  //   String oldName,
+  //   String newName,
+  //   String folderName,
+  // ) async {
+  //   try {
+  //     await _databaseService.updateTaskName(oldName, newName, folderName);
+  //   } catch (_) {
+  //     if (!context.mounted) return;
+  //     showDialogs(
+  //       context,
+  //       title: "Something went wrong",
+  //       content: "Unable to update task.",
+  //     );
+  //   }
+  // }
+
+  Future updateTask(String taskId, bool check) async {
+    await _databaseService.updateTask(taskId, check);
   }
 
-  Future updateTask(String createdAt, bool check) async {
-    await _databaseService.updateTask(createdAt, check);
-  }
-
-  Future editTask(String newTaskName, String createdAt) async {
-    await _databaseService.editTask(newTaskName, createdAt);
+  Future editTask(String newTaskName, String taskId) async {
+    await _databaseService.editTask(newTaskName, taskId);
   }
 
   Future updateFolderName(
     BuildContext context,
     String oldName,
     String newName,
+    String uid,
   ) async {
     try {
-      await _databaseService.updatePageName(oldName, newName);
+      await _databaseService.updatePageName(oldName, newName, uid);
     } on UnableToUpdateFolderException {
       if (!context.mounted) return;
       showDialogs(
@@ -151,7 +158,6 @@ class DatabaseFunctionality {
   ) async {
     await _databaseService.nukePageTableWithData(pageData);
     await _databaseService.nukeTaskTableWithData(tasksData);
-
   }
 
   Future pinOrUnpinNote(
@@ -185,7 +191,7 @@ class DatabaseFunctionality {
     return await _databaseService.getAllToDeleteRows();
   }
 
-  Future<String> getTasksToShare(String page) async {
-    return await _databaseService.getTasksToShare(page);
-  }
+  // Future<String> getTasksToShare(String page) async {
+  //   return await _databaseService.getTasksToShare(page);
+  // }
 }
