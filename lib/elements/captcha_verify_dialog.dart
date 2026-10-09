@@ -12,10 +12,6 @@ Future<String?> showCaptcha(BuildContext context) async {
   );
 }
 
-
-// This class is claude generated. I have no fucking clue whats going on.
-// But I clearly know its safe to use because we are just only loading website.
-// But this gay javascript language is out of my mind!!
 class _HCaptchaView extends StatefulWidget {
   const _HCaptchaView();
 
