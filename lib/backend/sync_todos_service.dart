@@ -82,7 +82,7 @@ class SyncTodosService {
           var sp = await SharedPreferences.getInstance();
           await sp.setBool("isLatest", false);
           if (!context.mounted) return;
-          Navigator.pushAndRemoveUntil(
+          await Navigator.pushAndRemoveUntil(
             context,
             CupertinoPageRoute(builder: (context) => OutdatedAppScreen()),
             (route) => false,

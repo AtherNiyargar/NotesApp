@@ -1,2 +1,2 @@
-const double appVersion = 1.2;
+const double appVersion = 1.3;
 bool versionChecked = false;

@@ -163,13 +163,13 @@ class DatabaseService {
   }
 
   // :I THINK ITS DONE
-  Future updatePageName(String oldName, String newName, String uid) async {
+  Future editPageName(String newName, String pageId) async {
     Database db = await getDb();
     final result = await db.update(
       _todoPageTable,
       {_pageNameColumn: newName, _toUploadColumn: 1},
       where: "$_pageUniqueId = ?",
-      whereArgs: [uid],
+      whereArgs: [pageId],
     );
     if (result == 0) {
       throw UnableToUpdateFolderException();
@@ -339,23 +339,23 @@ class DatabaseService {
     );
   }*/
 
-  // Future<String> getTasksToShare(String page) async {
-  //   Database db = await getDb();
-  //   final buffer = StringBuffer();
-  //   final tasks = await db.query(
-  //     _todoTable,
-  //     columns: [_isCompletedColumn, _taskColumn],
-  //     where: "$_belongToColumn = ? AND $_toDeleteColumn = ?",
-  //     whereArgs: [page, 0],
-  //   );
+  Future<String> getTasksToShare(String pageId) async {
+    Database db = await getDb();
+    final buffer = StringBuffer();
+    final tasks = await db.query(
+      _todoTable,
+      columns: [_isCompletedColumn, _taskColumn],
+      where: "$_belongToColumn = ? AND $_toDeleteColumn = ?",
+      whereArgs: [pageId, 0],
+    );
 
-  //   for (var row in tasks) {
-  //     buffer.write(
-  //       "\n${row[_isCompletedColumn] == 1 ? "✅" : "❌"} ${row[_taskColumn]}",
-  //     );
-  //   }
-  //   return buffer.toString();
-  // }
+    for (var row in tasks) {
+      buffer.write(
+        "\n${row[_isCompletedColumn] == 1 ? "✅" : "❌"} ${row[_taskColumn]}",
+      );
+    }
+    return buffer.toString();
+  }
 
   Future<int?> insertOrUpdateNote(
     int? sn,

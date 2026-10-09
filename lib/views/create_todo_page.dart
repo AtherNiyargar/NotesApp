@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:material_ui/material_ui.dart' show Divider;
+// import 'package:flutter/material.dart' show Divider;
+// import 'package:material_ui/material_ui.dart' show Divider;
 import 'package:notes_app/backend/database_functionality.dart';
 import 'package:notes_app/backend/todo_state_provider.dart';
 import 'package:notes_app/elements/show_dialogs.dart' show showDialogs;
@@ -51,7 +52,14 @@ class _CreateTodoPagePageState extends State<CreateTodoPagePage> {
               placeholder: " Page Name",
               style: TextStyle(fontSize: 32, fontWeight: .w500),
             ),
-            Divider(color: const Color.fromARGB(126, 153, 153, 153)),
+            // Divider(
+            //   // height: 5,
+              
+            // ),
+            CupertinoMenuDivider(
+              
+              color: const Color.fromARGB(126, 153, 153, 153),
+            ),
             CupertinoButton(
               child: Text("Create"),
               onPressed: () async {

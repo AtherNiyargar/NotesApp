@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:material_ui/material_ui.dart' show Theme, Colors;
+import 'package:liquid_glass_easy/liquid_glass_easy.dart';
 import 'package:notes_app/views/account_and_settings_page.dart';
 import 'package:notes_app/views/notes_page.dart';
 import 'package:notes_app/views/todo_page.dart';
@@ -17,11 +16,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    _screens = [
-      NotesPage(),
-      TodoPage(),
-      AccountAndSettingsPage(),
-    ];
+    _screens = [NotesPage(), TodoPage(), AccountAndSettingsPage()];
     super.initState();
   }
 
@@ -35,37 +30,85 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassScaffold(
-      // backgroundColor: const Color.fromARGB(0, 142, 142, 147),
-      bottomBar: GlassTabBar.minimizable(
-        innerBlur: 5,
-        // settings: LiquidGlassSettings(bodyMode: .clear, ),
-        // indicatorColor: const Color.fromARGB(32, 0, 0, 0),
-        backgroundQuality: .minimal,
-        platformViewBackdrop: true,
-        // quality: .minimal,
-        // maskingQuality: .off,
-        
-        // backgroundQuality: .minimal,
-        // minimizeController: _minimize,
-        // onMinimizedTabTap: _minimize.expand,
+    final isDark = CupertinoTheme.brightnessOf(context) == .dark;
+    return LiquidGlassScaffold(
+      bottomNavigationBar: LiquidGlassTabBar(
+        style: const LiquidGlassStyle(
+          shape: LiquidGlassShape.continuousRoundedRectangle(
+            cornerRadius: 30,
+            borderWidth: 3,
+            lightIntensity: 0,
+          ),
+          appearance: LiquidGlassAppearance(
+            color: Color.fromARGB(14, 0, 0, 0),
+            blur: LiquidGlassBlur(sigmaX: 10, sigmaY: 10),
+          ),
+          refraction: LiquidGlassRefraction(chromaticAberration: 0),
 
-        selectedIconColor: CupertinoColors.activeBlue,
 
+
+        ),
+
+
+
+        pillStyle: LiquidGlassTabPillStyle(
+          growHeight: 4,
+          distortionWidth: 9,
+          distortion: 0.04
+          // magnifierPill: LiquidGlassTabMagnifierPillStyle(enabled: true, magnification: 0)
+        ),
+
+        itemStyle: LiquidGlassTabItemStyle(
+          selectedColor: CupertinoColors.activeBlue,
+          unselectedColor: isDark
+              ? CupertinoColors.white
+              : CupertinoColors.black,
+          iconSize: 24,
+          underGlassIconSize: 21, // cancels the pill's magnification
+          labelFontSize: 12,
+          selectedFontWeight: FontWeight.w600,
+        ),
         selectedIndex: _selectedIndex,
-        onTabSelected: (value) {
-          setState(() {
-            _selectedIndex = value;
-          });
-        },
-        tabs: const [
-          GlassTab(icon: Icon(CupertinoIcons.create), label: 'Notes' ),
-          GlassTab(icon: Icon(CupertinoIcons.list_bullet), label: 'Todos'),
-          GlassTab(icon: Icon(CupertinoIcons.settings), label: 'Settings'),
+        onChanged: (value) => setState(() {
+          _selectedIndex = value;
+        }),
+        items: [
+          LiquidGlassTabBarItem(
+            icon: CupertinoIcons.create,
+            selectedIcon: CupertinoIcons.create_solid,
+
+            label: 'Notes',
+          ),
+          LiquidGlassTabBarItem(
+            icon: CupertinoIcons.list_bullet,
+            selectedIcon: CupertinoIcons.list_bullet,
+            label: 'Todos',
+          ),
+          LiquidGlassTabBarItem(
+            icon: CupertinoIcons.settings,
+            selectedIcon: CupertinoIcons.settings_solid,
+            label: 'Settings',
+          ),
         ],
       ),
+      // bottomBar: GlassTabBar.minimizable(
+      //   innerBlur: 5,
+      //   backgroundQuality: .minimal,
+      //   platformViewBackdrop: true,
+      //   selectedIconColor: CupertinoColors.activeBlue,
+      //   selectedIndex: _selectedIndex,
+      //   onTabSelected: (value) {
+      //     setState(() {
+      //       _selectedIndex = value;
+      //     });
+      //   },
+      //   tabs: const [
+      //     GlassTab(icon: Icon(CupertinoIcons.create), label: 'Notes'),
+      //     GlassTab(icon: Icon(CupertinoIcons.list_bullet), label: 'Todos'),
+      //     GlassTab(icon: Icon(CupertinoIcons.settings), label: 'Settings'),
+      //   ],
+      // ),
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      // body: _screen[_selectedIndex],
     );
   }
 }
@@ -77,7 +120,7 @@ class CreateOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = Theme.brightnessOf(context);
+    final themeMode = CupertinoTheme.brightnessOf(context);
     return Row(
       mainAxisAlignment: .spaceBetween,
       children: [
@@ -86,7 +129,7 @@ class CreateOption extends StatelessWidget {
           optionName,
 
           style: TextStyle(
-            color: themeMode == .dark ? Colors.white : Colors.black,
+            color: themeMode == .dark ? CupertinoColors.white : CupertinoColors.black,
             fontSize: 18,
           ),
         ),

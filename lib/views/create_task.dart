@@ -1,12 +1,17 @@
 import 'package:flutter/cupertino.dart';
-import 'package:material_ui/material_ui.dart' show Divider;
+import 'package:flutter/material.dart' show Divider;
+// import 'package:material_ui/material_ui.dart' show Divider;
 import 'package:notes_app/views/todo_task_page.dart';
 
 class CreateTask extends StatefulWidget {
   final TaskStateProvider _taskStateProvider;
   final String pageUid;
 
-  const new({super.key, required this._taskStateProvider, required this.pageUid});
+  const new({
+    super.key,
+    required this._taskStateProvider,
+    required this.pageUid,
+  });
 
   @override
   State<CreateTask> createState() => _CreateTaskState();
@@ -39,7 +44,9 @@ class _CreateTaskState extends State<CreateTask> {
                 placeholder: "Task name",
                 style: TextStyle(fontSize: 32),
               ),
-              Divider(color: const Color.fromARGB(126, 153, 153, 153)),
+              Divider(
+                color: const Color.fromARGB(126, 153, 153, 153),
+              ),
               CupertinoButton(
                 child: Text("Create"),
                 onPressed: () async {

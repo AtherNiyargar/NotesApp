@@ -1,75 +1,136 @@
 import 'package:flutter/cupertino.dart';
-import 'package:material_ui/material_ui.dart' show Colors;
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:notes_app/backend/auh_service.dart';
 import 'package:notes_app/backend/database_functionality.dart';
 import 'package:notes_app/backend/sync_todos_service.dart';
+import 'package:notes_app/elements/show_dialogs.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AccountAndSettingsPage extends StatelessWidget {
-  new({super.key});
+class AccountAndSettingsPage extends StatefulWidget {
+  const new({super.key});
 
-  final DatabaseFunctionality databaseFunctionality = DatabaseFunctionality();
+  @override
+  State<AccountAndSettingsPage> createState() => _AccountAndSettingsPageState();
+}
+
+class _AccountAndSettingsPageState extends State<AccountAndSettingsPage> {
+  // late final DatabaseFunctionality databaseFunctionality;
+  SharedPreferences? _prefs;
+  bool _isLoading = true;
+
+  late final AuthService authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPrefs();
+  }
+
+  Future<void> _initPrefs() async {
+    authService = .new();
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+    setState(() {
+      _prefs = prefs;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    AuthService authService = .new();
-    return CustomScrollView(
-      slivers: [
-        CupertinoSliverNavigationBar(
-          transitionBetweenRoutes: false,
-          largeTitle: Text("Settings"),
-        ),
-        SliverToBoxAdapter(
-          child: CupertinoFormSection(
-            header: Text("Account Settings"),
-            children: [
-              TileElement(
-                onTap: () async {
-                  final navigator = Navigator.of(context, rootNavigator: true);
-
-                  showCupertinoDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) {
-                      return const CupertinoAlertDialog(
-                        title: Column(
-                          children: [
-                            Text("Signing Out"),
-                            SizedBox(height: 20),
-                            CupertinoActivityIndicator(),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-
-                  await DatabaseFunctionality().deleteAllTables();
-                  await authService.signOut();
-
-                  if (navigator.mounted) {
-                    navigator.pop(); // close Signing Out dialog
-                  }
-                },
-                color: Colors.orange,
-                leadingIcon: Icon(CupertinoIcons.power, color: Colors.white),
-                leadingText: "Sign Out",
-                trailingText: null,
-              ),
-
-
-              
-              TileElement(
-                onTap: () async {
-                  await SyncTodosService().refresAppDataFromServer();
-                },
-                color: CupertinoColors.activeGreen,
-                leadingIcon: Icon(CupertinoIcons.cloud_download, color: Colors.white),
-                leadingText: "Refresh content from server",
-                trailingText: null,
-              ),
-            ],
+    return GlassScaffold(
+      body: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            transitionBetweenRoutes: false,
+            largeTitle: Text("Settings"),
           ),
-        ),
-      ],
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                CupertinoFormSection(
+                  header: Text("Account Settings"),
+                  children: [
+                    TileElement(
+                      onTap: () async {
+                        final navigator = Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        );
+
+                        showCupertinoDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) {
+                            return const CupertinoAlertDialog(
+                              title: Column(
+                                children: [
+                                  Text("Signing Out"),
+                                  SizedBox(height: 20),
+                                  CupertinoActivityIndicator(),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
+                        await DatabaseFunctionality().deleteAllTables();
+                        await authService.signOut();
+
+                        if (navigator.mounted) {
+                          navigator.pop(); // close Signing Out dialog
+                        }
+                      },
+                      color: CupertinoColors.activeOrange,
+                      leadingIcon: Icon(
+                        CupertinoIcons.power,
+                        color: CupertinoColors.white,
+                      ),
+                      leadingText: "Sign Out",
+                      trailingText: null,
+                    ),
+
+                    TileElement(
+                      onTap: () async {
+                        showCupertinoDialog(
+                          context: context,
+                          builder: (context) => CupertinoAlertDialog(
+                            title: Text("Refreshing data from the server"),
+                            content: Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: CupertinoActivityIndicator(),
+                            ),
+                          ),
+                        );
+                        try {
+                          await SyncTodosService().refresAppDataFromServer();
+                        } finally {
+                          if (context.mounted) {
+                            Navigator.maybePop(context);
+                          }
+                        }
+                      },
+                      color: CupertinoColors.activeGreen,
+                      leadingIcon: Icon(
+                        CupertinoIcons.cloud_download,
+                        color: CupertinoColors.white,
+                      ),
+                      leadingText: "Refresh content from server",
+                      trailingText: null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -80,6 +141,7 @@ class TileElement extends StatelessWidget {
   final String leadingText;
   final String? trailingText;
   final Future Function()? onTap;
+  final Widget? rightMostWidget;
   const new({
     super.key,
     required this.color,
@@ -87,6 +149,7 @@ class TileElement extends StatelessWidget {
     required this.leadingText,
     this.trailingText,
     this.onTap,
+    this.rightMostWidget,
   });
 
   @override
@@ -113,7 +176,7 @@ class TileElement extends StatelessWidget {
         spacing: 5,
         children: [
           Text(trailingText ?? ""),
-          Icon(CupertinoIcons.chevron_right),
+          rightMostWidget ?? Icon(CupertinoIcons.chevron_right),
         ],
       ),
     );

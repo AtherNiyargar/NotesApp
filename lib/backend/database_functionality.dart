@@ -93,7 +93,7 @@ class DatabaseFunctionality {
     return await _databaseService.getTasksToUpload();
   }
 
-  Future deleteAllTables()async {
+  Future deleteAllTables() async {
     await _databaseService.deleteAllTables();
   }
 
@@ -123,27 +123,19 @@ class DatabaseFunctionality {
     await _databaseService.editTask(newTaskName, taskId);
   }
 
-  Future updateFolderName(
+  Future editPageName(
     BuildContext context,
-    String oldName,
     String newName,
-    String uid,
+    String pageId,
   ) async {
     try {
-      await _databaseService.updatePageName(oldName, newName, uid);
-    } on UnableToUpdateFolderException {
-      if (!context.mounted) return;
-      showDialogs(
-        context,
-        title: "Cannot update folder name",
-        content: "The folder with this name may already exist.",
-      );
+      await _databaseService.editPageName(newName, pageId);
     } catch (_) {
       if (!context.mounted) return;
-      showDialogs(
+      await showDialogs(
         context,
         title: "Something went wrong",
-        content: "Unable to insert task.",
+        content: "Unable to update page.",
       );
     }
   }
@@ -191,7 +183,7 @@ class DatabaseFunctionality {
     return await _databaseService.getAllToDeleteRows();
   }
 
-  // Future<String> getTasksToShare(String page) async {
-  //   return await _databaseService.getTasksToShare(page);
-  // }
+  Future<String> getTasksToShare(String pageId) async {
+    return await _databaseService.getTasksToShare(pageId);
+  }
 }
